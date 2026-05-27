@@ -1,0 +1,15 @@
+# Go
+backend/proxy
+backend/*.exe
+
+# Node
+frontend/node_modules
+frontend/.next
+frontend/.env.local
+
+# Env
+.env
+*.env
+
+# OS
+.DS_Store
