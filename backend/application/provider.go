@@ -6,18 +6,18 @@ import (
 )
 
 type Provider struct {
-	ID            string
-	Name          string
-	RefreshToken  string
-	AccessToken   string
-	AccountUUID   string
-	DeviceID      string
-	Billing       string
-	Cap           int64
-	WindowSeconds int
-	Earnings      float64
-	CreatedAt     time.Time
-	UpdatedAt     time.Time
+	ID            string    `json:"id"`
+	Name          string    `json:"name"`
+	RefreshToken  string    `json:"refresh_token"`
+	AccessToken   string    `json:"access_token"`
+	AccountUUID   string    `json:"account_uuid"`
+	DeviceID      string    `json:"device_id"`
+	Billing       string    `json:"billing"`
+	Cap           int64     `json:"cap"`
+	WindowSeconds int       `json:"window_seconds"`
+	Earnings      float64   `json:"earnings"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
 }
 
 type ProviderRepository interface {
