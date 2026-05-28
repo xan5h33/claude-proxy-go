@@ -6,9 +6,12 @@ import (
 )
 
 type Config struct {
-	Port        string
-	DatabaseURL string
-	AdminSecret string
+	Port         string
+	DatabaseURL  string
+	AdminSecret  string
+	JWTSecret    string
+	InitAdminEmail    string
+	InitAdminPassword string
 }
 
 func Load() *Config {
@@ -16,14 +19,18 @@ func Load() *Config {
 	if dbURL == "" {
 		log.Fatal("DATABASE_URL is required")
 	}
-	adminSecret := os.Getenv("ADMIN_SECRET")
-	if adminSecret == "" {
-		log.Fatal("ADMIN_SECRET is required")
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		jwtSecret = "change-me-in-production"
+		log.Println("warning: JWT_SECRET not set, using default")
 	}
 	return &Config{
-		Port:        getEnv("PORT", "8080"),
-		DatabaseURL: dbURL,
-		AdminSecret: adminSecret,
+		Port:              getEnv("PORT", "8080"),
+		DatabaseURL:       dbURL,
+		AdminSecret:       os.Getenv("ADMIN_SECRET"),
+		JWTSecret:         jwtSecret,
+		InitAdminEmail:    os.Getenv("INIT_ADMIN_EMAIL"),
+		InitAdminPassword: os.Getenv("INIT_ADMIN_PASSWORD"),
 	}
 }
 

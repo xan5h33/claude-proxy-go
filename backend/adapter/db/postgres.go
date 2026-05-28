@@ -26,29 +26,55 @@ func NewPostgres(ctx context.Context, dsn string) (*Postgres, error) {
 
 // ── ProviderRepository ────────────────────────────────────────────────────────
 
-const providerCols = `id, name, account_uuid, cap, is_active, window_start_hour, window_end_hour, window_timezone, rate_limited_until, total_input_tokens, total_output_tokens, created_at, updated_at`
-const providerFullCols = `id, name, refresh_token, access_token, account_uuid, device_id, billing, cap, is_active, window_start_hour, window_end_hour, window_timezone, rate_limited_until, total_input_tokens, total_output_tokens, created_at, updated_at`
+const providerCols = `id, COALESCE(user_id::text,''), name, account_uuid, cap, is_active, window_start_hour, window_end_hour, window_timezone, rate_limited_until, total_input_tokens, total_output_tokens, created_at, updated_at`
+const providerFullCols = `id, COALESCE(user_id::text,''), name, refresh_token, access_token, account_uuid, device_id, billing, cap, is_active, window_start_hour, window_end_hour, window_timezone, rate_limited_until, total_input_tokens, total_output_tokens, created_at, updated_at`
 
 func scanProvider(row interface {
 	Scan(...any) error
 }, p *application.Provider, full bool) error {
 	if full {
-		return row.Scan(&p.ID, &p.Name, &p.RefreshToken, &p.AccessToken, &p.AccountUUID, &p.DeviceID, &p.Billing,
+		return row.Scan(&p.ID, &p.UserID, &p.Name, &p.RefreshToken, &p.AccessToken, &p.AccountUUID, &p.DeviceID, &p.Billing,
 			&p.Cap, &p.IsActive, &p.WindowStartHour, &p.WindowEndHour, &p.WindowTimezone, &p.RateLimitedUntil,
 			&p.TotalInputTokens, &p.TotalOutputTokens, &p.CreatedAt, &p.UpdatedAt)
 	}
-	return row.Scan(&p.ID, &p.Name, &p.AccountUUID,
+	return row.Scan(&p.ID, &p.UserID, &p.Name, &p.AccountUUID,
 		&p.Cap, &p.IsActive, &p.WindowStartHour, &p.WindowEndHour, &p.WindowTimezone, &p.RateLimitedUntil,
 		&p.TotalInputTokens, &p.TotalOutputTokens, &p.CreatedAt, &p.UpdatedAt)
 }
 
 func (db *Postgres) Create(ctx context.Context, p *application.Provider) error {
+	userID := p.UserID
+	if userID == "" {
+		return db.pool.QueryRow(ctx, `
+			INSERT INTO providers (name, refresh_token, access_token, account_uuid, device_id, billing, cap, window_timezone)
+			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+			RETURNING id, created_at, updated_at`,
+			p.Name, p.RefreshToken, p.AccessToken, p.AccountUUID, p.DeviceID, p.Billing, p.Cap, p.WindowTimezone,
+		).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
+	}
 	return db.pool.QueryRow(ctx, `
-		INSERT INTO providers (name, refresh_token, access_token, account_uuid, device_id, billing, cap, window_timezone)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+		INSERT INTO providers (user_id, name, refresh_token, access_token, account_uuid, device_id, billing, cap, window_timezone)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
 		RETURNING id, created_at, updated_at`,
-		p.Name, p.RefreshToken, p.AccessToken, p.AccountUUID, p.DeviceID, p.Billing, p.Cap, p.WindowTimezone,
+		userID, p.Name, p.RefreshToken, p.AccessToken, p.AccountUUID, p.DeviceID, p.Billing, p.Cap, p.WindowTimezone,
 	).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
+}
+
+func (db *Postgres) FindByUserID(ctx context.Context, userID string) ([]*application.Provider, error) {
+	rows, err := db.pool.Query(ctx, `SELECT `+providerCols+` FROM providers WHERE user_id=$1 ORDER BY created_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]*application.Provider, 0)
+	for rows.Next() {
+		p := &application.Provider{}
+		if err := scanProvider(rows, p, false); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
 }
 
 func (db *Postgres) FindAll(ctx context.Context) ([]*application.Provider, error) {
@@ -152,12 +178,18 @@ func (db *Postgres) Delete(ctx context.Context, id string) error {
 // ── UserRepository ────────────────────────────────────────────────────────────
 
 func scanUser(row interface{ Scan(...any) error }, u *application.User) error {
-	return row.Scan(&u.ID, &u.APIKey, &u.Cap, &u.TotalInputTokens, &u.TotalOutputTokens, &u.CreatedAt)
+	return row.Scan(&u.ID, &u.APIKey, &u.Email, &u.PasswordHash, &u.IsAdmin, &u.Cap, &u.TotalInputTokens, &u.TotalOutputTokens, &u.CreatedAt)
 }
 
-const userCols = `id, api_key, cap, total_input_tokens, total_output_tokens, created_at`
+const userCols = `id, api_key, COALESCE(email,''), COALESCE(password_hash,''), is_admin, cap, total_input_tokens, total_output_tokens, created_at`
 
 func (db *Postgres) CreateUser(ctx context.Context, u *application.User) error {
+	if u.Email != "" {
+		return db.pool.QueryRow(ctx,
+			`INSERT INTO users (api_key, email, password_hash) VALUES ($1,$2,$3) RETURNING id, created_at`,
+			u.APIKey, u.Email, u.PasswordHash,
+		).Scan(&u.ID, &u.CreatedAt)
+	}
 	return db.pool.QueryRow(ctx,
 		`INSERT INTO users (api_key) VALUES ($1) RETURNING id, created_at`,
 		u.APIKey,
@@ -167,6 +199,14 @@ func (db *Postgres) CreateUser(ctx context.Context, u *application.User) error {
 func (db *Postgres) FindByAPIKey(ctx context.Context, apiKey string) (*application.User, error) {
 	u := &application.User{}
 	if err := scanUser(db.pool.QueryRow(ctx, `SELECT `+userCols+` FROM users WHERE api_key=$1`, apiKey), u); err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func (db *Postgres) FindByEmail(ctx context.Context, email string) (*application.User, error) {
+	u := &application.User{}
+	if err := scanUser(db.pool.QueryRow(ctx, `SELECT `+userCols+` FROM users WHERE email=$1`, email), u); err != nil {
 		return nil, err
 	}
 	return u, nil
@@ -205,6 +245,11 @@ func (db *Postgres) UpdateUserCap(ctx context.Context, id string, cap int64) err
 
 func (db *Postgres) UpdateUserAPIKey(ctx context.Context, id, newKey string) error {
 	_, err := db.pool.Exec(ctx, `UPDATE users SET api_key=$1 WHERE id=$2`, newKey, id)
+	return err
+}
+
+func (db *Postgres) SetUserAdmin(ctx context.Context, id string, admin bool) error {
+	_, err := db.pool.Exec(ctx, `UPDATE users SET is_admin=$1 WHERE id=$2`, admin, id)
 	return err
 }
 
@@ -284,6 +329,9 @@ func (db *Postgres) RunMigrations(ctx context.Context) error {
 		CREATE TABLE IF NOT EXISTS users (
 			id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			api_key             TEXT NOT NULL UNIQUE,
+			email               TEXT UNIQUE,
+			password_hash       TEXT,
+			is_admin            BOOLEAN NOT NULL DEFAULT false,
 			cap                 BIGINT NOT NULL DEFAULT 0,
 			total_input_tokens  BIGINT NOT NULL DEFAULT 0,
 			total_output_tokens BIGINT NOT NULL DEFAULT 0,
@@ -311,11 +359,17 @@ func (db *Postgres) RunMigrations(ctx context.Context) error {
 			DROP COLUMN IF EXISTS window_seconds;
 
 		ALTER TABLE users
+			ADD COLUMN IF NOT EXISTS email               TEXT UNIQUE,
+			ADD COLUMN IF NOT EXISTS password_hash       TEXT,
+			ADD COLUMN IF NOT EXISTS is_admin            BOOLEAN NOT NULL DEFAULT false,
 			ADD COLUMN IF NOT EXISTS cap                 BIGINT NOT NULL DEFAULT 0,
 			ADD COLUMN IF NOT EXISTS total_input_tokens  BIGINT NOT NULL DEFAULT 0,
 			ADD COLUMN IF NOT EXISTS total_output_tokens BIGINT NOT NULL DEFAULT 0,
 			DROP COLUMN IF EXISTS balance,
 			DROP COLUMN IF EXISTS total_used;
+
+		ALTER TABLE providers
+			ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL;
 
 		ALTER TABLE usage_log
 			DROP COLUMN IF EXISTS cost;
@@ -339,6 +393,9 @@ func (r *userRepo) Create(ctx context.Context, u *application.User) error {
 func (r *userRepo) FindByAPIKey(ctx context.Context, k string) (*application.User, error) {
 	return r.Postgres.FindByAPIKey(ctx, k)
 }
+func (r *userRepo) FindByEmail(ctx context.Context, email string) (*application.User, error) {
+	return r.Postgres.FindByEmail(ctx, email)
+}
 func (r *userRepo) FindAll(ctx context.Context) ([]*application.User, error) {
 	return r.FindAllUsers(ctx)
 }
@@ -350,6 +407,9 @@ func (r *userRepo) UpdateCap(ctx context.Context, id string, cap int64) error {
 }
 func (r *userRepo) UpdateAPIKey(ctx context.Context, id, newKey string) error {
 	return r.UpdateUserAPIKey(ctx, id, newKey)
+}
+func (r *userRepo) SetAdmin(ctx context.Context, id string, admin bool) error {
+	return r.SetUserAdmin(ctx, id, admin)
 }
 func (r *userRepo) Delete(ctx context.Context, id string) error { return r.DeleteUser(ctx, id) }
 

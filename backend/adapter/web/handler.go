@@ -19,16 +19,62 @@ type Handler struct {
 	proxy     *application.ProxyService
 	providers *application.ProviderService
 	users     *application.UserService
+	auth      *application.AuthService
 }
 
-func NewHandler(proxy *application.ProxyService, providers *application.ProviderService, users *application.UserService) *Handler {
-	return &Handler{proxy: proxy, providers: providers, users: users}
+func NewHandler(proxy *application.ProxyService, providers *application.ProviderService, users *application.UserService, auth *application.AuthService) *Handler {
+	return &Handler{proxy: proxy, providers: providers, users: users, auth: auth}
 }
 
 // ── Health ────────────────────────────────────────────────────────────────────
 
 func (h *Handler) Health(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+func (h *Handler) Register(c *gin.Context) {
+	var req struct {
+		Email    string `json:"email"    binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	user, err := h.auth.Register(c.Request.Context(), req.Email, req.Password)
+	if err != nil {
+		if errors.Is(err, application.ErrEmailTaken) {
+			c.JSON(http.StatusConflict, gin.H{"error": "email already taken"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	tok, err := h.auth.MakeToken(user)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, gin.H{"token": tok, "user": user})
+}
+
+func (h *Handler) Login(c *gin.Context) {
+	var req struct {
+		Email    string `json:"email"    binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	tok, user, err := h.auth.Login(c.Request.Context(), req.Email, req.Password)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"token": tok, "user": user})
 }
 
 // ── OAuth preflight ───────────────────────────────────────────────────────────
@@ -115,8 +161,17 @@ func (h *Handler) streamResponse(c *gin.Context, resp *application.ForwardRespon
 // ── Provider handlers ─────────────────────────────────────────────────────────
 
 func (h *Handler) RegisterProvider(c *gin.Context) {
+	h.registerProvider(c, "")
+}
+
+func (h *Handler) RegisterMyProvider(c *gin.Context) {
+	user := c.MustGet("user").(*application.User)
+	h.registerProvider(c, user.ID)
+}
+
+func (h *Handler) registerProvider(c *gin.Context, userID string) {
 	var req struct {
-		Name        string `json:"name"          binding:"required"`
+		Name         string `json:"name"          binding:"required"`
 		RefreshToken string `json:"refresh_token" binding:"required"`
 		AccessToken  string `json:"access_token"`
 		AccountUUID  string `json:"account_uuid"  binding:"required"`
@@ -128,12 +183,72 @@ func (h *Handler) RegisterProvider(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	p, err := h.providers.Register(c.Request.Context(), req.Name, req.RefreshToken, req.AccessToken, req.AccountUUID, req.DeviceID, req.Billing, req.Cap)
+	p, err := h.providers.Register(c.Request.Context(), userID, req.Name, req.RefreshToken, req.AccessToken, req.AccountUUID, req.DeviceID, req.Billing, req.Cap)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, p)
+}
+
+func (h *Handler) ListMyProviders(c *gin.Context) {
+	user := c.MustGet("user").(*application.User)
+	providers, err := h.providers.ListByUser(c.Request.Context(), user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, providers)
+}
+
+func (h *Handler) UpdateMyProviderTokens(c *gin.Context) {
+	user := c.MustGet("user").(*application.User)
+	p, err := h.providers.Get(c.Request.Context(), c.Param("id"))
+	if err != nil || p == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	if p.UserID != user.ID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+	var req struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.providers.UpdateRefreshToken(c.Request.Context(), p.ID, req.RefreshToken); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) SetMyProviderActive(c *gin.Context) {
+	user := c.MustGet("user").(*application.User)
+	p, err := h.providers.Get(c.Request.Context(), c.Param("id"))
+	if err != nil || p == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	if p.UserID != user.ID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+	var req struct {
+		Active bool `json:"active"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.providers.SetActive(c.Request.Context(), p.ID, req.Active); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
 }
 
 func (h *Handler) ListProviders(c *gin.Context) {
@@ -374,7 +489,8 @@ func parseUsageSSE(data string) (input, output int) {
 	return
 }
 
-func AuthMiddleware(users *application.UserService) gin.HandlerFunc {
+// APIKeyMiddleware authenticates via x-api-key / Bearer sk-proxy-* — used for the proxy.
+func APIKeyMiddleware(users *application.UserService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		apiKey := c.GetHeader("x-api-key")
 		if apiKey == "" {
@@ -394,12 +510,74 @@ func AuthMiddleware(users *application.UserService) gin.HandlerFunc {
 	}
 }
 
-func AdminMiddleware(adminSecret string) gin.HandlerFunc {
+// JWTMiddleware authenticates via Bearer JWT — used for the web dashboard.
+// Falls back to API key for the portal self-service routes.
+func JWTMiddleware(users *application.UserService, auth *application.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if c.GetHeader("x-admin-secret") != adminSecret {
+		bearer := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
+
+		// Try JWT first
+		if bearer != "" && !strings.HasPrefix(bearer, "sk-") {
+			claims, err := auth.ParseToken(bearer)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+				return
+			}
+			user, err := users.Get(c.Request.Context(), claims.Subject)
+			if err != nil || user == nil {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "user not found"})
+				return
+			}
+			c.Set("user", user)
+			c.Next()
+			return
+		}
+
+		// Fall back to API key (for portal / CLI usage)
+		apiKey := c.GetHeader("x-api-key")
+		if apiKey == "" {
+			apiKey = bearer
+		}
+		if apiKey == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "missing credentials"})
+			return
+		}
+		user, err := users.FindByAPIKey(c.Request.Context(), apiKey)
+		if err != nil || user == nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+			return
+		}
+		c.Set("user", user)
+		c.Next()
+	}
+}
+
+// AdminMiddleware requires is_admin on JWT, or a valid x-admin-secret header.
+func AdminMiddleware(adminSecret string, users *application.UserService, auth *application.AuthService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Allow ADMIN_SECRET header for scripts
+		if adminSecret != "" && c.GetHeader("x-admin-secret") == adminSecret {
+			c.Next()
+			return
+		}
+
+		// Require JWT with is_admin
+		bearer := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
+		if bearer == "" {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
+		claims, err := auth.ParseToken(bearer)
+		if err != nil || !claims.IsAdmin {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "admin access required"})
+			return
+		}
+		user, err := users.Get(c.Request.Context(), claims.Subject)
+		if err != nil || user == nil || !user.IsAdmin {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "admin access required"})
+			return
+		}
+		c.Set("user", user)
 		c.Next()
 	}
 }

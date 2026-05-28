@@ -1,11 +1,20 @@
+import { getToken, clearToken } from "./auth"
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getToken()
   const res = await fetch(`/api${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init?.headers,
     },
   })
+  if (res.status === 401) {
+    clearToken()
+    if (typeof window !== "undefined") window.location.href = "/login"
+    throw new Error("Unauthorized")
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error(err.error ?? res.statusText)
@@ -39,11 +48,31 @@ export interface ProviderSettings {
 
 export interface User {
   id: string
+  email: string
   api_key: string
+  is_admin: boolean
   cap: number
   total_input_tokens: number
   total_output_tokens: number
   created_at: string
+}
+
+export interface AuthResponse {
+  token: string
+  user: User
+}
+
+export const auth = {
+  register: (email: string, password: string) =>
+    request<AuthResponse>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    }),
+  login: (email: string, password: string) =>
+    request<AuthResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    }),
 }
 
 export const api = {
@@ -108,4 +137,33 @@ export const me = {
     meRequest<void>(key, "/user/me/cap", { method: "PATCH", body: JSON.stringify({ cap }) }),
   rotateKey: (key: string) =>
     meRequest<User>(key, "/user/me/rotate-key", { method: "POST" }),
+  listProviders: (key: string) => meRequest<Provider[]>(key, "/user/me/providers"),
+  registerProvider: (key: string, data: {
+    name: string; refresh_token: string; access_token?: string
+    account_uuid: string; device_id: string; billing: string; cap?: number
+  }) => meRequest<Provider>(key, "/user/me/providers", { method: "POST", body: JSON.stringify(data) }),
+  updateProviderTokens: (key: string, providerId: string, refreshToken: string) =>
+    meRequest<void>(key, `/user/me/providers/${providerId}/tokens`, {
+      method: "PATCH", body: JSON.stringify({ refresh_token: refreshToken }),
+    }),
+  setProviderActive: (key: string, providerId: string, active: boolean) =>
+    meRequest<void>(key, `/user/me/providers/${providerId}/active`, {
+      method: "PATCH", body: JSON.stringify({ active }),
+    }),
+}
+
+// JWT-based self-service (uses stored token instead of passed key)
+export const dashboard = {
+  getMe: () => request<User>("/user/me"),
+  updateCap: (cap: number) => request<void>("/user/me/cap", { method: "PATCH", body: JSON.stringify({ cap }) }),
+  rotateKey: () => request<User>("/user/me/rotate-key", { method: "POST" }),
+  listProviders: () => request<Provider[]>("/user/me/providers"),
+  registerProvider: (data: {
+    name: string; refresh_token: string; access_token?: string
+    account_uuid: string; device_id: string; billing: string; cap?: number
+  }) => request<Provider>("/user/me/providers", { method: "POST", body: JSON.stringify(data) }),
+  updateProviderTokens: (id: string, refreshToken: string) =>
+    request<void>(`/user/me/providers/${id}/tokens`, { method: "PATCH", body: JSON.stringify({ refresh_token: refreshToken }) }),
+  setProviderActive: (id: string, active: boolean) =>
+    request<void>(`/user/me/providers/${id}/active`, { method: "PATCH", body: JSON.stringify({ active }) }),
 }

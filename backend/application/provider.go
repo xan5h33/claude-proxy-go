@@ -7,6 +7,7 @@ import (
 
 type Provider struct {
 	ID                 string     `json:"id"`
+	UserID             string     `json:"user_id,omitempty"`
 	Name               string     `json:"name"`
 	RefreshToken       string     `json:"refresh_token,omitempty"`
 	AccessToken        string     `json:"access_token,omitempty"`
@@ -37,6 +38,7 @@ type ProviderRepository interface {
 	FindAll(ctx context.Context) ([]*Provider, error)
 	FindAvailable(ctx context.Context) ([]*Provider, error)
 	FindByID(ctx context.Context, id string) (*Provider, error)
+	FindByUserID(ctx context.Context, userID string) ([]*Provider, error)
 	UpdateTokens(ctx context.Context, id, accessToken, refreshToken string) error
 	UpdateRefreshToken(ctx context.Context, id, refreshToken string) error
 	UpdateSettings(ctx context.Context, id string, s ProviderSettings) error
@@ -53,8 +55,9 @@ func NewProviderService(repo ProviderRepository) *ProviderService {
 	return &ProviderService{repo: repo}
 }
 
-func (s *ProviderService) Register(ctx context.Context, name, refreshToken, accessToken, accountUUID, deviceID, billing string, cap int64) (*Provider, error) {
+func (s *ProviderService) Register(ctx context.Context, userID, name, refreshToken, accessToken, accountUUID, deviceID, billing string, cap int64) (*Provider, error) {
 	p := &Provider{
+		UserID:         userID,
 		Name:           name,
 		RefreshToken:   refreshToken,
 		AccessToken:    accessToken,
@@ -71,6 +74,10 @@ func (s *ProviderService) Register(ctx context.Context, name, refreshToken, acce
 		return nil, err
 	}
 	return p, nil
+}
+
+func (s *ProviderService) ListByUser(ctx context.Context, userID string) ([]*Provider, error) {
+	return s.repo.FindByUserID(ctx, userID)
 }
 
 func (s *ProviderService) List(ctx context.Context) ([]*Provider, error) {
