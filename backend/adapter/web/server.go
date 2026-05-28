@@ -12,7 +12,7 @@ func NewRouter(h *Handler, users *application.UserService, adminSecret string) *
 	r.Use(cors.New(cors.Config{
 		AllowAllOrigins:  true,
 		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Content-Type", "x-admin-secret", "x-api-key", "Authorization"},
+		AllowHeaders:     []string{"Content-Type", "x-api-key", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: false,
 	}))
@@ -21,16 +21,13 @@ func NewRouter(h *Handler, users *application.UserService, adminSecret string) *
 	r.GET("/api/hello", h.OAuthHello)
 	r.GET("/v1/oauth/hello", h.OAuthHello)
 
-	// Proxy — requires user API key auth
 	proxy := r.Group("/")
 	proxy.Use(AuthMiddleware(users))
 	{
 		proxy.POST("/v1/messages", h.ProxyMessages)
 	}
 
-	// Admin API — requires admin secret
 	admin := r.Group("/admin")
-	admin.Use(AdminMiddleware(adminSecret))
 	{
 		admin.POST("/providers", h.RegisterProvider)
 		admin.GET("/providers", h.ListProviders)

@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 const BACKEND = process.env.BACKEND_URL ?? "http://localhost:8080"
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? ""
 
 async function proxy(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params
@@ -9,7 +8,6 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
   url.search = req.nextUrl.search
 
   const headers = new Headers(req.headers)
-  headers.set("x-admin-secret", ADMIN_SECRET)
   headers.delete("host")
 
   const res = await fetch(url, {

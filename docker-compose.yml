@@ -35,7 +35,6 @@ services:
       dockerfile: Dockerfile
     environment:
       BACKEND_URL: http://backend:8080
-      ADMIN_SECRET: secret123
     ports:
       - "3000:3000"
     depends_on:
