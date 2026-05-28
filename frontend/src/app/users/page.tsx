@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { api, User } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -66,8 +67,11 @@ export default function UsersPage() {
 }
 
 function UserCard({ user, onDelete }: { user: User; onDelete: () => void }) {
+  const router = useRouter()
   const [deleting, setDeleting] = useState(false)
   const [copied, setCopied] = useState(false)
+
+  const total = user.total_input_tokens + user.total_output_tokens
 
   const handleCopy = () => {
     navigator.clipboard.writeText(user.api_key)
@@ -91,12 +95,27 @@ function UserCard({ user, onDelete }: { user: User; onDelete: () => void }) {
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-mono">{user.api_key}</CardTitle>
-          <Badge variant="outline">{(user.total_input_tokens + user.total_output_tokens).toLocaleString()} tokens</Badge>
+          <CardTitle
+            className="text-sm font-mono hover:underline cursor-pointer"
+            onClick={() => router.push(`/users/${user.id}`)}
+          >
+            {user.api_key}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{total.toLocaleString()} tokens</Badge>
+            {user.cap > 0 && (
+              <Badge variant={total >= user.cap ? "destructive" : "secondary"}>
+                cap {user.cap.toLocaleString()}
+              </Badge>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => router.push(`/users/${user.id}`)}>
+            Manage
+          </Button>
           <Button variant="outline" size="sm" onClick={handleCopy}>
             {copied ? "Copied!" : "Copy Key"}
           </Button>

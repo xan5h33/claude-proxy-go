@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -53,8 +54,12 @@ func (h *Handler) ProxyMessages(c *gin.Context) {
 		Path:    c.Request.URL.RequestURI(),
 		Headers: headers,
 		Body:    rawBody,
-	}, user.ID)
+	}, user.ID, user.Cap, user.TotalInputTokens+user.TotalOutputTokens)
 	if err != nil {
+		if errors.Is(err, application.ErrCapExceeded) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "token cap exceeded"})
+			return
+		}
 		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 		return
 	}
@@ -81,7 +86,7 @@ func (h *Handler) ProxyPassthrough(c *gin.Context) {
 		Path:    c.Request.URL.RequestURI(),
 		Headers: headers,
 		Body:    body,
-	}, "")
+	}, "", 0, 0)
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 		return
@@ -111,24 +116,19 @@ func (h *Handler) streamResponse(c *gin.Context, resp *application.ForwardRespon
 
 func (h *Handler) RegisterProvider(c *gin.Context) {
 	var req struct {
-		Name          string `json:"name"           binding:"required"`
-		RefreshToken  string `json:"refresh_token"  binding:"required"`
-		AccessToken   string `json:"access_token"`
-		AccountUUID   string `json:"account_uuid"   binding:"required"`
-		DeviceID      string `json:"device_id"      binding:"required"`
-		Billing       string `json:"billing"        binding:"required"`
-		Cap           int64  `json:"cap"`
-		WindowSeconds int    `json:"window_seconds"`
+		Name        string `json:"name"          binding:"required"`
+		RefreshToken string `json:"refresh_token" binding:"required"`
+		AccessToken  string `json:"access_token"`
+		AccountUUID  string `json:"account_uuid"  binding:"required"`
+		DeviceID     string `json:"device_id"     binding:"required"`
+		Billing      string `json:"billing"       binding:"required"`
+		Cap          int64  `json:"cap"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if req.WindowSeconds == 0 {
-		req.WindowSeconds = 3600
-	}
-
-	p, err := h.providers.Register(c.Request.Context(), req.Name, req.RefreshToken, req.AccessToken, req.AccountUUID, req.DeviceID, req.Billing, req.Cap, req.WindowSeconds)
+	p, err := h.providers.Register(c.Request.Context(), req.Name, req.RefreshToken, req.AccessToken, req.AccountUUID, req.DeviceID, req.Billing, req.Cap)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -142,20 +142,7 @@ func (h *Handler) ListProviders(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	type safeProvider struct {
-		ID                string `json:"id"`
-		Name              string `json:"name"`
-		AccountUUID       string `json:"account_uuid"`
-		Cap               int64  `json:"cap"`
-		WindowSeconds     int    `json:"window_seconds"`
-		TotalInputTokens  int64  `json:"total_input_tokens"`
-		TotalOutputTokens int64  `json:"total_output_tokens"`
-	}
-	out := make([]safeProvider, len(providers))
-	for i, p := range providers {
-		out[i] = safeProvider{p.ID, p.Name, p.AccountUUID, p.Cap, p.WindowSeconds, p.TotalInputTokens, p.TotalOutputTokens}
-	}
-	c.JSON(http.StatusOK, out)
+	c.JSON(http.StatusOK, providers)
 }
 
 func (h *Handler) GetProvider(c *gin.Context) {
@@ -180,6 +167,37 @@ func (h *Handler) UpdateRefreshToken(c *gin.Context) {
 		return
 	}
 	if err := h.providers.UpdateRefreshToken(c.Request.Context(), c.Param("id"), req.RefreshToken); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) UpdateSettings(c *gin.Context) {
+	var req application.ProviderSettings
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.WindowTimezone == "" {
+		req.WindowTimezone = "UTC"
+	}
+	if err := h.providers.UpdateSettings(c.Request.Context(), c.Param("id"), req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) SetActive(c *gin.Context) {
+	var req struct {
+		Active bool `json:"active"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.providers.SetActive(c.Request.Context(), c.Param("id"), req.Active); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -215,12 +233,84 @@ func (h *Handler) ListUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, users)
 }
 
+func (h *Handler) GetUser(c *gin.Context) {
+	u, err := h.users.Get(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if u == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	c.JSON(http.StatusOK, u)
+}
+
+func (h *Handler) UpdateUserCap(c *gin.Context) {
+	var req struct {
+		Cap int64 `json:"cap"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.users.UpdateCap(c.Request.Context(), c.Param("id"), req.Cap); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) RotateUserKey(c *gin.Context) {
+	newKey := "sk-proxy-" + uuid.New().String()
+	u, err := h.users.RotateKey(c.Request.Context(), c.Param("id"), newKey)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, u)
+}
+
 func (h *Handler) DeleteUser(c *gin.Context) {
 	if err := h.users.Delete(c.Request.Context(), c.Param("id")); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.Status(http.StatusNoContent)
+}
+
+// ── User self-service (auth by own API key) ───────────────────────────────────
+
+func (h *Handler) GetMe(c *gin.Context) {
+	user := c.MustGet("user").(*application.User)
+	c.JSON(http.StatusOK, user)
+}
+
+func (h *Handler) UpdateMeCap(c *gin.Context) {
+	user := c.MustGet("user").(*application.User)
+	var req struct {
+		Cap int64 `json:"cap"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.users.UpdateCap(c.Request.Context(), user.ID, req.Cap); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (h *Handler) RotateMeKey(c *gin.Context) {
+	user := c.MustGet("user").(*application.User)
+	newKey := "sk-proxy-" + uuid.New().String()
+	u, err := h.users.RotateKey(c.Request.Context(), user.ID, newKey)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, u)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

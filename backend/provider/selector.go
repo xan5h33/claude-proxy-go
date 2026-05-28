@@ -9,7 +9,6 @@ import (
 
 var ErrNoProviders = errors.New("no providers available")
 
-// LeastUsed selects the provider with the lowest earnings (least used).
 type LeastUsed struct {
 	repo application.ProviderRepository
 }
@@ -19,7 +18,7 @@ func NewLeastUsed(repo application.ProviderRepository) *LeastUsed {
 }
 
 func (s *LeastUsed) Select(ctx context.Context) (*application.Provider, error) {
-	providers, err := s.repo.FindAll(ctx)
+	providers, err := s.repo.FindAvailable(ctx)
 	if err != nil {
 		return nil, err
 	}

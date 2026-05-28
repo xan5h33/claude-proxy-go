@@ -26,19 +26,33 @@ func NewPostgres(ctx context.Context, dsn string) (*Postgres, error) {
 
 // ── ProviderRepository ────────────────────────────────────────────────────────
 
+const providerCols = `id, name, account_uuid, cap, is_active, window_start_hour, window_end_hour, window_timezone, rate_limited_until, total_input_tokens, total_output_tokens, created_at, updated_at`
+const providerFullCols = `id, name, refresh_token, access_token, account_uuid, device_id, billing, cap, is_active, window_start_hour, window_end_hour, window_timezone, rate_limited_until, total_input_tokens, total_output_tokens, created_at, updated_at`
+
+func scanProvider(row interface {
+	Scan(...any) error
+}, p *application.Provider, full bool) error {
+	if full {
+		return row.Scan(&p.ID, &p.Name, &p.RefreshToken, &p.AccessToken, &p.AccountUUID, &p.DeviceID, &p.Billing,
+			&p.Cap, &p.IsActive, &p.WindowStartHour, &p.WindowEndHour, &p.WindowTimezone, &p.RateLimitedUntil,
+			&p.TotalInputTokens, &p.TotalOutputTokens, &p.CreatedAt, &p.UpdatedAt)
+	}
+	return row.Scan(&p.ID, &p.Name, &p.AccountUUID,
+		&p.Cap, &p.IsActive, &p.WindowStartHour, &p.WindowEndHour, &p.WindowTimezone, &p.RateLimitedUntil,
+		&p.TotalInputTokens, &p.TotalOutputTokens, &p.CreatedAt, &p.UpdatedAt)
+}
+
 func (db *Postgres) Create(ctx context.Context, p *application.Provider) error {
 	return db.pool.QueryRow(ctx, `
-		INSERT INTO providers (name, refresh_token, access_token, account_uuid, device_id, billing, cap, window_seconds)
+		INSERT INTO providers (name, refresh_token, access_token, account_uuid, device_id, billing, cap, window_timezone)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
 		RETURNING id, created_at, updated_at`,
-		p.Name, p.RefreshToken, p.AccessToken, p.AccountUUID, p.DeviceID, p.Billing, p.Cap, p.WindowSeconds,
+		p.Name, p.RefreshToken, p.AccessToken, p.AccountUUID, p.DeviceID, p.Billing, p.Cap, p.WindowTimezone,
 	).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
 }
 
 func (db *Postgres) FindAll(ctx context.Context) ([]*application.Provider, error) {
-	rows, err := db.pool.Query(ctx, `
-		SELECT id, name, refresh_token, access_token, account_uuid, device_id, billing, cap, window_seconds, total_input_tokens, total_output_tokens, created_at, updated_at
-		FROM providers ORDER BY (total_input_tokens + total_output_tokens) ASC`)
+	rows, err := db.pool.Query(ctx, `SELECT `+providerCols+` FROM providers ORDER BY (total_input_tokens + total_output_tokens) ASC`)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +61,38 @@ func (db *Postgres) FindAll(ctx context.Context) ([]*application.Provider, error
 	out := make([]*application.Provider, 0)
 	for rows.Next() {
 		p := &application.Provider{}
-		if err := rows.Scan(&p.ID, &p.Name, &p.RefreshToken, &p.AccessToken, &p.AccountUUID, &p.DeviceID, &p.Billing, &p.Cap, &p.WindowSeconds, &p.TotalInputTokens, &p.TotalOutputTokens, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := scanProvider(rows, p, false); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+func (db *Postgres) FindAvailable(ctx context.Context) ([]*application.Provider, error) {
+	rows, err := db.pool.Query(ctx, `
+		SELECT `+providerFullCols+` FROM providers
+		WHERE is_active = true
+		AND (rate_limited_until IS NULL OR rate_limited_until < NOW())
+		AND (
+			window_start_hour IS NULL
+			OR (window_start_hour <= window_end_hour
+				AND EXTRACT(HOUR FROM NOW() AT TIME ZONE window_timezone)::int >= window_start_hour
+				AND EXTRACT(HOUR FROM NOW() AT TIME ZONE window_timezone)::int < window_end_hour)
+			OR (window_start_hour > window_end_hour
+				AND (EXTRACT(HOUR FROM NOW() AT TIME ZONE window_timezone)::int >= window_start_hour
+				  OR EXTRACT(HOUR FROM NOW() AT TIME ZONE window_timezone)::int < window_end_hour))
+		)
+		ORDER BY (total_input_tokens + total_output_tokens) ASC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]*application.Provider, 0)
+	for rows.Next() {
+		p := &application.Provider{}
+		if err := scanProvider(rows, p, true); err != nil {
 			return nil, err
 		}
 		out = append(out, p)
@@ -57,10 +102,8 @@ func (db *Postgres) FindAll(ctx context.Context) ([]*application.Provider, error
 
 func (db *Postgres) FindByID(ctx context.Context, id string) (*application.Provider, error) {
 	p := &application.Provider{}
-	err := db.pool.QueryRow(ctx, `
-		SELECT id, name, refresh_token, access_token, account_uuid, device_id, billing, cap, window_seconds, total_input_tokens, total_output_tokens, created_at, updated_at
-		FROM providers WHERE id=$1`, id,
-	).Scan(&p.ID, &p.Name, &p.RefreshToken, &p.AccessToken, &p.AccountUUID, &p.DeviceID, &p.Billing, &p.Cap, &p.WindowSeconds, &p.TotalInputTokens, &p.TotalOutputTokens, &p.CreatedAt, &p.UpdatedAt)
+	err := scanProvider(db.pool.QueryRow(ctx,
+		`SELECT `+providerCols+` FROM providers WHERE id=$1`, id), p, false)
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +124,25 @@ func (db *Postgres) UpdateRefreshToken(ctx context.Context, id, refreshToken str
 	return err
 }
 
+func (db *Postgres) UpdateSettings(ctx context.Context, id string, s application.ProviderSettings) error {
+	_, err := db.pool.Exec(ctx,
+		`UPDATE providers SET cap=$1, window_start_hour=$2, window_end_hour=$3, window_timezone=$4, updated_at=NOW() WHERE id=$5`,
+		s.Cap, s.WindowStartHour, s.WindowEndHour, s.WindowTimezone, id)
+	return err
+}
+
+func (db *Postgres) SetActive(ctx context.Context, id string, active bool) error {
+	_, err := db.pool.Exec(ctx,
+		`UPDATE providers SET is_active=$1, updated_at=NOW() WHERE id=$2`, active, id)
+	return err
+}
+
+func (db *Postgres) SetRateLimitedUntil(ctx context.Context, id string, until *time.Time) error {
+	_, err := db.pool.Exec(ctx,
+		`UPDATE providers SET rate_limited_until=$1, updated_at=NOW() WHERE id=$2`, until, id)
+	return err
+}
+
 
 func (db *Postgres) Delete(ctx context.Context, id string) error {
 	_, err := db.pool.Exec(ctx, `DELETE FROM providers WHERE id=$1`, id)
@@ -88,6 +150,12 @@ func (db *Postgres) Delete(ctx context.Context, id string) error {
 }
 
 // ── UserRepository ────────────────────────────────────────────────────────────
+
+func scanUser(row interface{ Scan(...any) error }, u *application.User) error {
+	return row.Scan(&u.ID, &u.APIKey, &u.Cap, &u.TotalInputTokens, &u.TotalOutputTokens, &u.CreatedAt)
+}
+
+const userCols = `id, api_key, cap, total_input_tokens, total_output_tokens, created_at`
 
 func (db *Postgres) CreateUser(ctx context.Context, u *application.User) error {
 	return db.pool.QueryRow(ctx,
@@ -98,17 +166,14 @@ func (db *Postgres) CreateUser(ctx context.Context, u *application.User) error {
 
 func (db *Postgres) FindByAPIKey(ctx context.Context, apiKey string) (*application.User, error) {
 	u := &application.User{}
-	err := db.pool.QueryRow(ctx,
-		`SELECT id, api_key, total_input_tokens, total_output_tokens, created_at FROM users WHERE api_key=$1`, apiKey,
-	).Scan(&u.ID, &u.APIKey, &u.TotalInputTokens, &u.TotalOutputTokens, &u.CreatedAt)
-	if err != nil {
+	if err := scanUser(db.pool.QueryRow(ctx, `SELECT `+userCols+` FROM users WHERE api_key=$1`, apiKey), u); err != nil {
 		return nil, err
 	}
 	return u, nil
 }
 
 func (db *Postgres) FindAllUsers(ctx context.Context) ([]*application.User, error) {
-	rows, err := db.pool.Query(ctx, `SELECT id, api_key, total_input_tokens, total_output_tokens, created_at FROM users ORDER BY created_at DESC`)
+	rows, err := db.pool.Query(ctx, `SELECT `+userCols+` FROM users ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +182,7 @@ func (db *Postgres) FindAllUsers(ctx context.Context) ([]*application.User, erro
 	out := make([]*application.User, 0)
 	for rows.Next() {
 		u := &application.User{}
-		if err := rows.Scan(&u.ID, &u.APIKey, &u.TotalInputTokens, &u.TotalOutputTokens, &u.CreatedAt); err != nil {
+		if err := scanUser(rows, u); err != nil {
 			return nil, err
 		}
 		out = append(out, u)
@@ -127,13 +192,20 @@ func (db *Postgres) FindAllUsers(ctx context.Context) ([]*application.User, erro
 
 func (db *Postgres) FindUserByID(ctx context.Context, id string) (*application.User, error) {
 	u := &application.User{}
-	err := db.pool.QueryRow(ctx,
-		`SELECT id, api_key, total_input_tokens, total_output_tokens, created_at FROM users WHERE id=$1`, id,
-	).Scan(&u.ID, &u.APIKey, &u.TotalInputTokens, &u.TotalOutputTokens, &u.CreatedAt)
-	if err != nil {
+	if err := scanUser(db.pool.QueryRow(ctx, `SELECT `+userCols+` FROM users WHERE id=$1`, id), u); err != nil {
 		return nil, err
 	}
 	return u, nil
+}
+
+func (db *Postgres) UpdateUserCap(ctx context.Context, id string, cap int64) error {
+	_, err := db.pool.Exec(ctx, `UPDATE users SET cap=$1 WHERE id=$2`, cap, id)
+	return err
+}
+
+func (db *Postgres) UpdateUserAPIKey(ctx context.Context, id, newKey string) error {
+	_, err := db.pool.Exec(ctx, `UPDATE users SET api_key=$1 WHERE id=$2`, newKey, id)
+	return err
 }
 
 func (db *Postgres) DeleteUser(ctx context.Context, id string) error {
@@ -198,7 +270,11 @@ func (db *Postgres) RunMigrations(ctx context.Context) error {
 			device_id           TEXT NOT NULL,
 			billing             TEXT NOT NULL,
 			cap                 BIGINT NOT NULL DEFAULT 0,
-			window_seconds      INT NOT NULL DEFAULT 3600,
+			is_active           BOOLEAN NOT NULL DEFAULT true,
+			window_start_hour   INT,
+			window_end_hour     INT,
+			window_timezone     TEXT NOT NULL DEFAULT 'UTC',
+			rate_limited_until  TIMESTAMPTZ,
 			total_input_tokens  BIGINT NOT NULL DEFAULT 0,
 			total_output_tokens BIGINT NOT NULL DEFAULT 0,
 			created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -208,6 +284,7 @@ func (db *Postgres) RunMigrations(ctx context.Context) error {
 		CREATE TABLE IF NOT EXISTS users (
 			id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			api_key             TEXT NOT NULL UNIQUE,
+			cap                 BIGINT NOT NULL DEFAULT 0,
 			total_input_tokens  BIGINT NOT NULL DEFAULT 0,
 			total_output_tokens BIGINT NOT NULL DEFAULT 0,
 			created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -223,11 +300,18 @@ func (db *Postgres) RunMigrations(ctx context.Context) error {
 		);
 
 		ALTER TABLE providers
+			ADD COLUMN IF NOT EXISTS is_active           BOOLEAN NOT NULL DEFAULT true,
+			ADD COLUMN IF NOT EXISTS window_start_hour   INT,
+			ADD COLUMN IF NOT EXISTS window_end_hour     INT,
+			ADD COLUMN IF NOT EXISTS window_timezone     TEXT NOT NULL DEFAULT 'UTC',
+			ADD COLUMN IF NOT EXISTS rate_limited_until  TIMESTAMPTZ,
 			ADD COLUMN IF NOT EXISTS total_input_tokens  BIGINT NOT NULL DEFAULT 0,
 			ADD COLUMN IF NOT EXISTS total_output_tokens BIGINT NOT NULL DEFAULT 0,
-			DROP COLUMN IF EXISTS earnings;
+			DROP COLUMN IF EXISTS earnings,
+			DROP COLUMN IF EXISTS window_seconds;
 
 		ALTER TABLE users
+			ADD COLUMN IF NOT EXISTS cap                 BIGINT NOT NULL DEFAULT 0,
 			ADD COLUMN IF NOT EXISTS total_input_tokens  BIGINT NOT NULL DEFAULT 0,
 			ADD COLUMN IF NOT EXISTS total_output_tokens BIGINT NOT NULL DEFAULT 0,
 			DROP COLUMN IF EXISTS balance,
@@ -260,6 +344,12 @@ func (r *userRepo) FindAll(ctx context.Context) ([]*application.User, error) {
 }
 func (r *userRepo) FindByID(ctx context.Context, id string) (*application.User, error) {
 	return r.FindUserByID(ctx, id)
+}
+func (r *userRepo) UpdateCap(ctx context.Context, id string, cap int64) error {
+	return r.UpdateUserCap(ctx, id, cap)
+}
+func (r *userRepo) UpdateAPIKey(ctx context.Context, id, newKey string) error {
+	return r.UpdateUserAPIKey(ctx, id, newKey)
 }
 func (r *userRepo) Delete(ctx context.Context, id string) error { return r.DeleteUser(ctx, id) }
 

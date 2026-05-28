@@ -9,7 +9,7 @@ export default function Home() {
         <h1 className="text-3xl font-bold mb-2">Claude Proxy</h1>
         <p className="text-muted-foreground mb-8">Admin Dashboard</p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader>
               <CardTitle>Providers</CardTitle>
@@ -25,11 +25,23 @@ export default function Home() {
           <Card>
             <CardHeader>
               <CardTitle>Users</CardTitle>
-              <CardDescription>Manage proxy API keys</CardDescription>
+              <CardDescription>Manage proxy API keys and caps</CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/users">
                 <Button>Manage Users</Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>User Portal</CardTitle>
+              <CardDescription>Self-service — view usage, update cap, rotate key</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/portal">
+                <Button variant="outline">Open Portal</Button>
               </Link>
             </CardContent>
           </Card>

@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"time"
@@ -63,7 +64,13 @@ func NewProxyService(client AnthropicClient, selector Selector, usage UsageRepos
 	}
 }
 
-func (s *ProxyService) Forward(ctx context.Context, req *ForwardRequest, userID string) (*ForwardResponse, error) {
+var ErrCapExceeded = errors.New("token cap exceeded")
+
+func (s *ProxyService) Forward(ctx context.Context, req *ForwardRequest, userID string, userCap, userTotal int64) (*ForwardResponse, error) {
+	if userCap > 0 && userTotal >= userCap {
+		return nil, ErrCapExceeded
+	}
+
 	provider, err := s.selector.Select(ctx)
 	if err != nil {
 		return nil, err
@@ -84,6 +91,10 @@ func (s *ProxyService) Forward(ctx context.Context, req *ForwardRequest, userID 
 		resp.Body.Close()
 		access, refresh, err := s.client.RefreshToken(ctx, provider)
 		if err != nil {
+			log.Printf("provider %s refresh failed, pausing: %v", provider.ID, err)
+			if dbErr := s.provRepo.SetActive(ctx, provider.ID, false); dbErr != nil {
+				log.Printf("set inactive: %v", dbErr)
+			}
 			return nil, err
 		}
 		provider.AccessToken = access
@@ -95,6 +106,24 @@ func (s *ProxyService) Forward(ctx context.Context, req *ForwardRequest, userID 
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if resp.StatusCode == 429 {
+		resp.Body.Close()
+		until := time.Now().UTC().Add(5 * time.Hour)
+		if err := s.provRepo.SetRateLimitedUntil(ctx, provider.ID, &until); err != nil {
+			log.Printf("set rate limited: %v", err)
+		}
+		log.Printf("provider %s rate limited until %s, retrying", provider.ID, until.Format(time.RFC3339))
+		provider2, err := s.selector.Select(ctx)
+		if err != nil {
+			return nil, err
+		}
+		resp, err = s.client.Forward(ctx, req, provider2)
+		if err != nil {
+			return nil, err
+		}
+		provider = provider2
 	}
 
 	resp.ProviderID = provider.ID

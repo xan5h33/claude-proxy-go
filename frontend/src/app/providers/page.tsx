@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { api, Provider } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -61,10 +62,19 @@ export default function ProvidersPage() {
 }
 
 function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: () => void }) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [token, setToken] = useState("")
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+
+  const isRateLimited = provider.rate_limited_until
+    ? new Date(provider.rate_limited_until) > new Date()
+    : false
+
+  const windowLabel = provider.window_start_hour !== null && provider.window_end_hour !== null
+    ? `${provider.window_start_hour}:00–${provider.window_end_hour}:00 ${provider.window_timezone}`
+    : "always on"
 
   const handleUpdateToken = async () => {
     if (!token.trim()) return
@@ -94,24 +104,41 @@ function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: ()
   }
 
   return (
-    <Card>
+    <Card className="cursor-default">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">{provider.name}</CardTitle>
-          <Badge variant="secondary">{(provider.total_input_tokens + provider.total_output_tokens).toLocaleString()} tokens</Badge>
+          <CardTitle
+            className="text-lg hover:underline cursor-pointer"
+            onClick={() => router.push(`/providers/${provider.id}`)}
+          >
+            {provider.name}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            {isRateLimited && <Badge variant="destructive">Rate Limited</Badge>}
+            <Badge variant={provider.is_active ? "default" : "secondary"}>
+              {provider.is_active ? "Active" : "Paused"}
+            </Badge>
+            <Badge variant="outline">
+              {(provider.total_input_tokens + provider.total_output_tokens).toLocaleString()} tokens
+            </Badge>
+          </div>
         </div>
         <p className="text-xs text-muted-foreground font-mono">{provider.account_uuid}</p>
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-          <span>Cap: {provider.cap === 0 ? "unlimited" : provider.cap}</span>
+          <span>Cap: {provider.cap === 0 ? "unlimited" : provider.cap.toLocaleString()}</span>
           <span>·</span>
-          <span>Window: {provider.window_seconds}s</span>
+          <span>Window: {windowLabel}</span>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => router.push(`/providers/${provider.id}`)}>
+            Manage
+          </Button>
+
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger>
-              <Button variant="outline" size="sm">Update Refresh Token</Button>
+              <Button variant="outline" size="sm">Update Token</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -126,9 +153,6 @@ function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: ()
                     onChange={(e) => setToken(e.target.value)}
                     type="password"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Or run <code className="bg-muted px-1 rounded">PROXY_URL=... ADMIN_SECRET=... scripts/register.sh</code> to auto-update.
-                  </p>
                 </div>
                 <Button onClick={handleUpdateToken} disabled={saving || !token.trim()} className="w-full">
                   {saving ? "Saving..." : "Save"}
