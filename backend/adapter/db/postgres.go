@@ -44,7 +44,7 @@ func (db *Postgres) FindAll(ctx context.Context) ([]*application.Provider, error
 	}
 	defer rows.Close()
 
-	var out []*application.Provider
+	out := make([]*application.Provider, 0)
 	for rows.Next() {
 		p := &application.Provider{}
 		if err := rows.Scan(&p.ID, &p.Name, &p.RefreshToken, &p.AccessToken, &p.AccountUUID, &p.DeviceID, &p.Billing, &p.Cap, &p.WindowSeconds, &p.Earnings, &p.CreatedAt, &p.UpdatedAt); err != nil {
@@ -120,7 +120,7 @@ func (db *Postgres) FindAllUsers(ctx context.Context) ([]*application.User, erro
 	}
 	defer rows.Close()
 
-	var out []*application.User
+	out := make([]*application.User, 0)
 	for rows.Next() {
 		u := &application.User{}
 		if err := rows.Scan(&u.ID, &u.APIKey, &u.Balance, &u.TotalUsed, &u.CreatedAt); err != nil {
