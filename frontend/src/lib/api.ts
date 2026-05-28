@@ -1,12 +1,8 @@
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
-const ADMIN_SECRET = process.env.NEXT_PUBLIC_ADMIN_SECRET ?? ""
-
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`/api${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      "x-admin-secret": ADMIN_SECRET,
       ...init?.headers,
     },
   })
