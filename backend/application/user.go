@@ -6,11 +6,11 @@ import (
 )
 
 type User struct {
-	ID        string    `json:"id"`
-	APIKey    string    `json:"api_key"`
-	Balance   float64   `json:"balance"`
-	TotalUsed float64   `json:"total_used"`
-	CreatedAt time.Time `json:"created_at"`
+	ID                string    `json:"id"`
+	APIKey            string    `json:"api_key"`
+	TotalInputTokens  int64     `json:"total_input_tokens"`
+	TotalOutputTokens int64     `json:"total_output_tokens"`
+	CreatedAt         time.Time `json:"created_at"`
 }
 
 type UserRepository interface {

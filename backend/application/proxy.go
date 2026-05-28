@@ -14,12 +14,12 @@ type UsageLog struct {
 	ProviderID   string
 	InputTokens  int
 	OutputTokens int
-	Cost         float64
 	CreatedAt    time.Time
 }
 
 type UsageRepository interface {
 	Log(ctx context.Context, u *UsageLog) error
+	AddTokens(ctx context.Context, userID, providerID string, input, output int) error
 	FindByUser(ctx context.Context, userID string) ([]*UsageLog, error)
 }
 
@@ -40,6 +40,7 @@ type ForwardResponse struct {
 	Headers    map[string]string
 	Body       io.ReadCloser
 	IsStream   bool
+	ProviderID string
 }
 
 type Selector interface {
@@ -96,20 +97,25 @@ func (s *ProxyService) Forward(ctx context.Context, req *ForwardRequest, userID 
 		}
 	}
 
+	resp.ProviderID = provider.ID
 	return resp, nil
 }
 
-func (s *ProxyService) LogUsage(ctx context.Context, userID, providerID string, input, output int, cost float64) {
-	err := s.usage.Log(ctx, &UsageLog{
+func (s *ProxyService) LogUsage(ctx context.Context, userID, providerID string, input, output int) {
+	if input == 0 && output == 0 {
+		return
+	}
+	if err := s.usage.Log(ctx, &UsageLog{
 		UserID:       userID,
 		ProviderID:   providerID,
 		InputTokens:  input,
 		OutputTokens: output,
-		Cost:         cost,
 		CreatedAt:    time.Now().UTC(),
-	})
-	if err != nil {
+	}); err != nil {
 		log.Printf("usage log: %v", err)
+	}
+	if err := s.usage.AddTokens(ctx, userID, providerID, input, output); err != nil {
+		log.Printf("add tokens: %v", err)
 	}
 }
 

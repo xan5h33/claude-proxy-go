@@ -29,7 +29,7 @@ func (s *LeastUsed) Select(ctx context.Context) (*application.Provider, error) {
 
 	best := providers[0]
 	for _, p := range providers[1:] {
-		if p.Earnings < best.Earnings {
+		if (p.TotalInputTokens + p.TotalOutputTokens) < (best.TotalInputTokens + best.TotalOutputTokens) {
 			best = p
 		}
 	}

@@ -6,18 +6,19 @@ import (
 )
 
 type Provider struct {
-	ID            string    `json:"id"`
-	Name          string    `json:"name"`
-	RefreshToken  string    `json:"refresh_token"`
-	AccessToken   string    `json:"access_token"`
-	AccountUUID   string    `json:"account_uuid"`
-	DeviceID      string    `json:"device_id"`
-	Billing       string    `json:"billing"`
-	Cap           int64     `json:"cap"`
-	WindowSeconds int       `json:"window_seconds"`
-	Earnings      float64   `json:"earnings"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID                 string    `json:"id"`
+	Name               string    `json:"name"`
+	RefreshToken       string    `json:"refresh_token"`
+	AccessToken        string    `json:"access_token"`
+	AccountUUID        string    `json:"account_uuid"`
+	DeviceID           string    `json:"device_id"`
+	Billing            string    `json:"billing"`
+	Cap                int64     `json:"cap"`
+	WindowSeconds      int       `json:"window_seconds"`
+	TotalInputTokens   int64     `json:"total_input_tokens"`
+	TotalOutputTokens  int64     `json:"total_output_tokens"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 type ProviderRepository interface {
@@ -26,7 +27,6 @@ type ProviderRepository interface {
 	FindByID(ctx context.Context, id string) (*Provider, error)
 	UpdateTokens(ctx context.Context, id, accessToken, refreshToken string) error
 	UpdateRefreshToken(ctx context.Context, id, refreshToken string) error
-	AddEarnings(ctx context.Context, id string, amount float64) error
 	Delete(ctx context.Context, id string) error
 }
 

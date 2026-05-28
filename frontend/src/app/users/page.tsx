@@ -92,7 +92,7 @@ function UserCard({ user, onDelete }: { user: User; onDelete: () => void }) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-mono">{user.api_key}</CardTitle>
-          <Badge variant="outline">${user.total_used.toFixed(4)} used</Badge>
+          <Badge variant="outline">{(user.total_input_tokens + user.total_output_tokens).toLocaleString()} tokens</Badge>
         </div>
       </CardHeader>
       <CardContent>

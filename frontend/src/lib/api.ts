@@ -20,14 +20,15 @@ export interface Provider {
   account_uuid: string
   cap: number
   window_seconds: number
-  earnings: number
+  total_input_tokens: number
+  total_output_tokens: number
 }
 
 export interface User {
   id: string
   api_key: string
-  balance: number
-  total_used: number
+  total_input_tokens: number
+  total_output_tokens: number
   created_at: string
 }
 

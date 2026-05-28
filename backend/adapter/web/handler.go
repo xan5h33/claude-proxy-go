@@ -63,13 +63,11 @@ func (h *Handler) ProxyMessages(c *gin.Context) {
 	writeHeaders(c, resp)
 
 	if resp.IsStream {
-		h.streamResponse(c, resp, user.ID)
+		h.streamResponse(c, resp, user.ID, resp.ProviderID)
 	} else {
 		body, _ := io.ReadAll(resp.Body)
 		input, output := parseUsageJSON(body)
-		if input > 0 || output > 0 {
-			h.proxy.LogUsage(c.Request.Context(), user.ID, "", input, output, 0)
-		}
+		h.proxy.LogUsage(c.Request.Context(), user.ID, resp.ProviderID, input, output)
 		c.Data(resp.StatusCode, resp.Headers["Content-Type"], body)
 	}
 }
@@ -93,7 +91,7 @@ func (h *Handler) ProxyPassthrough(c *gin.Context) {
 	io.Copy(c.Writer, resp.Body)
 }
 
-func (h *Handler) streamResponse(c *gin.Context, resp *application.ForwardResponse, userID string) {
+func (h *Handler) streamResponse(c *gin.Context, resp *application.ForwardResponse, userID, providerID string) {
 	ctx := c.Request.Context()
 	var buf bytes.Buffer
 	scanner := bufio.NewScanner(io.TeeReader(resp.Body, &buf))
@@ -101,9 +99,7 @@ func (h *Handler) streamResponse(c *gin.Context, resp *application.ForwardRespon
 	c.Stream(func(w io.Writer) bool {
 		if !scanner.Scan() {
 			input, output := parseUsageSSE(buf.String())
-			if input > 0 || output > 0 {
-				h.proxy.LogUsage(ctx, userID, "", input, output, 0)
-			}
+			h.proxy.LogUsage(ctx, userID, providerID, input, output)
 			return false
 		}
 		w.Write([]byte(scanner.Text() + "\n"))
@@ -147,16 +143,17 @@ func (h *Handler) ListProviders(c *gin.Context) {
 		return
 	}
 	type safeProvider struct {
-		ID            string  `json:"id"`
-		Name          string  `json:"name"`
-		AccountUUID   string  `json:"account_uuid"`
-		Cap           int64   `json:"cap"`
-		WindowSeconds int     `json:"window_seconds"`
-		Earnings      float64 `json:"earnings"`
+		ID                string `json:"id"`
+		Name              string `json:"name"`
+		AccountUUID       string `json:"account_uuid"`
+		Cap               int64  `json:"cap"`
+		WindowSeconds     int    `json:"window_seconds"`
+		TotalInputTokens  int64  `json:"total_input_tokens"`
+		TotalOutputTokens int64  `json:"total_output_tokens"`
 	}
 	out := make([]safeProvider, len(providers))
 	for i, p := range providers {
-		out[i] = safeProvider{p.ID, p.Name, p.AccountUUID, p.Cap, p.WindowSeconds, p.Earnings}
+		out[i] = safeProvider{p.ID, p.Name, p.AccountUUID, p.Cap, p.WindowSeconds, p.TotalInputTokens, p.TotalOutputTokens}
 	}
 	c.JSON(http.StatusOK, out)
 }

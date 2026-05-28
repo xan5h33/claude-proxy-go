@@ -98,7 +98,7 @@ function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: ()
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">{provider.name}</CardTitle>
-          <Badge variant="secondary">${provider.earnings.toFixed(4)} earned</Badge>
+          <Badge variant="secondary">{(provider.total_input_tokens + provider.total_output_tokens).toLocaleString()} tokens</Badge>
         </div>
         <p className="text-xs text-muted-foreground font-mono">{provider.account_uuid}</p>
       </CardHeader>
