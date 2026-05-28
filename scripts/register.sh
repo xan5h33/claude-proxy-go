@@ -2,13 +2,7 @@
 set -e
 
 PROXY_URL="${PROXY_URL:-http://localhost:8080}"
-ADMIN_SECRET="${ADMIN_SECRET:-}"
 NAME="${NAME:-$(hostname)}"
-
-if [ -z "$ADMIN_SECRET" ]; then
-  echo "Error: ADMIN_SECRET env var required"
-  exit 1
-fi
 
 echo "Reading credentials from keychain..."
 
@@ -65,7 +59,6 @@ echo "Registering provider '$NAME' at $PROXY_URL..."
 
 RESPONSE=$(curl -sf -X POST "$PROXY_URL/admin/providers" \
   -H "Content-Type: application/json" \
-  -H "x-admin-secret: $ADMIN_SECRET" \
   -d "{
     \"name\": \"$NAME\",
     \"refresh_token\": \"$REFRESH_TOKEN\",
