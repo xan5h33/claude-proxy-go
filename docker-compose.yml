@@ -23,8 +23,12 @@ services:
       - "8080:8080"
     environment:
       DATABASE_URL: postgres://proxy:proxy@db:5432/proxy?sslmode=disable
+      JWT_SECRET: dev-jwt-secret-change-in-production
       ADMIN_SECRET: secret123
+      INIT_ADMIN_EMAIL: admin@example.com
+      INIT_ADMIN_PASSWORD: changeme
       PORT: 8080
+      # ALLOWED_ORIGIN: http://localhost:3000  # leave empty to allow all in dev
     depends_on:
       db:
         condition: service_healthy

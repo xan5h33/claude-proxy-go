@@ -6,10 +6,11 @@ import (
 )
 
 type Config struct {
-	Port         string
-	DatabaseURL  string
-	AdminSecret  string
-	JWTSecret    string
+	Port              string
+	DatabaseURL       string
+	AdminSecret       string
+	JWTSecret         string
+	AllowedOrigin     string // e.g. https://your-app.vercel.app — empty = allow all
 	InitAdminEmail    string
 	InitAdminPassword string
 }
@@ -29,6 +30,7 @@ func Load() *Config {
 		DatabaseURL:       dbURL,
 		AdminSecret:       os.Getenv("ADMIN_SECRET"),
 		JWTSecret:         jwtSecret,
+		AllowedOrigin:     os.Getenv("ALLOWED_ORIGIN"),
 		InitAdminEmail:    os.Getenv("INIT_ADMIN_EMAIL"),
 		InitAdminPassword: os.Getenv("INIT_ADMIN_PASSWORD"),
 	}

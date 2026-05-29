@@ -42,7 +42,7 @@ func main() {
 	}
 
 	handler := web.NewHandler(proxyService, providerService, userService, authService)
-	router  := web.NewRouter(handler, userService, authService, cfg.AdminSecret)
+	router  := web.NewRouter(handler, userService, authService, cfg.AdminSecret, cfg.AllowedOrigin)
 
 	log.Printf("listening on :%s", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {

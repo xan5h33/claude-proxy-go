@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+ENV NEXT_STANDALONE=true
 RUN npm run build
 
 FROM node:20-alpine

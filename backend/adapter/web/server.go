@@ -7,15 +7,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(h *Handler, users *application.UserService, auth *application.AuthService, adminSecret string) *gin.Engine {
+func NewRouter(h *Handler, users *application.UserService, auth *application.AuthService, adminSecret, allowedOrigin string) *gin.Engine {
 	r := gin.Default()
-	r.Use(cors.New(cors.Config{
-		AllowAllOrigins:  true,
+
+	corsConfig := cors.Config{
 		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Content-Type", "x-api-key", "x-admin-secret", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: false,
-	}))
+	}
+	if allowedOrigin == "" {
+		corsConfig.AllowAllOrigins = true
+	} else {
+		corsConfig.AllowOrigins = []string{allowedOrigin, "http://localhost:3000"}
+	}
+	r.Use(cors.New(corsConfig))
 
 	r.GET("/health", h.Health)
 	r.GET("/api/hello", h.OAuthHello)
