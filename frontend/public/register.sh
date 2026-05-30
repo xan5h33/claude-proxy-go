@@ -2,7 +2,7 @@
 set -e
 
 API_KEY="${1:-$API_KEY}"
-PROXY_URL="${PROXY_URL:-http://localhost:8080}"
+PROXY_URL="${PROXY_URL:-https://claude-proxy-backend.fly.dev}"
 NAME="${NAME:-$(hostname)}"
 
 if [ -z "$API_KEY" ]; then

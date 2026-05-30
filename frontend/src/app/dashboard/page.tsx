@@ -207,10 +207,6 @@ function MyProvidersCard() {
 
   useEffect(() => { load() }, [])
 
-  const proxyUrl = typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.host}`
-    : ""
-
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -222,7 +218,7 @@ function MyProvidersCard() {
             Run this script on any Mac with Claude Code to register it as a provider.
           </p>
           <div className="font-mono text-xs bg-background border rounded px-3 py-2 break-all select-all">
-            PROXY_URL={proxyUrl.replace(":3000", ":8080")} ./register.sh {user?.api_key}
+            ./register.sh {user?.api_key}
           </div>
           <a href="/register.sh" download="register.sh">
             <Button size="sm" variant="outline">Download register.sh</Button>
