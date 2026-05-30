@@ -191,9 +191,9 @@ function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (
 }
 
 function MyProvidersCard() {
+  const { user } = useAuth()
   const [providers, setProviders] = useState<Provider[]>([])
   const [loading, setLoading] = useState(true)
-  const [showAdd, setShowAdd] = useState(false)
 
   const load = async () => {
     try {
@@ -207,27 +207,34 @@ function MyProvidersCard() {
 
   useEffect(() => { load() }, [])
 
+  const proxyUrl = typeof window !== "undefined"
+    ? `${window.location.protocol}//${window.location.host}`
+    : ""
+
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">My Providers</CardTitle>
-          <Button size="sm" variant="outline" onClick={() => setShowAdd(!showAdd)}>
-            {showAdd ? "Cancel" : "+ Add Provider"}
-          </Button>
-        </div>
+        <CardTitle className="text-base">My Providers</CardTitle>
       </CardHeader>
-      <CardContent>
-        {showAdd && <AddProviderForm onAdd={() => { setShowAdd(false); load() }} />}
+      <CardContent className="space-y-4">
+        <div className="p-4 bg-muted/40 rounded-lg space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Run this script on any Mac with Claude Code to register it as a provider.
+          </p>
+          <div className="font-mono text-xs bg-background border rounded px-3 py-2 break-all select-all">
+            PROXY_URL={proxyUrl.replace(":3000", ":8080")} ./register.sh {user?.api_key}
+          </div>
+          <a href="/register.sh" download="register.sh">
+            <Button size="sm" variant="outline">Download register.sh</Button>
+          </a>
+        </div>
 
         {loading ? (
           <p className="text-sm text-muted-foreground">Loading...</p>
         ) : providers.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4 text-center">
-            No providers yet. Add your Claude Code OAuth tokens to contribute to the pool.
-          </p>
+          <p className="text-sm text-muted-foreground text-center py-2">No providers yet.</p>
         ) : (
-          <div className="space-y-3 mt-2">
+          <div className="space-y-3">
             {providers.map((p) => (
               <ProviderRow key={p.id} provider={p} onUpdate={load} />
             ))}
@@ -235,69 +242,6 @@ function MyProvidersCard() {
         )}
       </CardContent>
     </Card>
-  )
-}
-
-function AddProviderForm({ onAdd }: { onAdd: () => void }) {
-  const [name, setName] = useState("")
-  const [refreshToken, setRefreshToken] = useState("")
-  const [accessToken, setAccessToken] = useState("")
-  const [accountUUID, setAccountUUID] = useState("")
-  const [deviceID, setDeviceID] = useState("")
-  const [billing, setBilling] = useState("")
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState("")
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSaving(true)
-    setError("")
-    try {
-      await dashboard.registerProvider({
-        name, refresh_token: refreshToken, access_token: accessToken,
-        account_uuid: accountUUID, device_id: deviceID, billing,
-      })
-      onAdd()
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to add")
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-3 mb-4 p-4 bg-muted/40 rounded-lg">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-xs">Name</Label>
-          <Input placeholder="My Account" value={name} onChange={(e) => setName(e.target.value)} required className="h-8 text-sm" />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Account UUID</Label>
-          <Input placeholder="uuid" value={accountUUID} onChange={(e) => setAccountUUID(e.target.value)} required className="h-8 text-sm" />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Refresh Token</Label>
-          <Input type="password" placeholder="sk-ant-oat01-..." value={refreshToken} onChange={(e) => setRefreshToken(e.target.value)} required className="h-8 text-sm" />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Access Token (optional)</Label>
-          <Input type="password" placeholder="sk-ant-..." value={accessToken} onChange={(e) => setAccessToken(e.target.value)} className="h-8 text-sm" />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Device ID</Label>
-          <Input placeholder="device-uuid" value={deviceID} onChange={(e) => setDeviceID(e.target.value)} required className="h-8 text-sm" />
-        </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Billing</Label>
-          <Input placeholder="billing string" value={billing} onChange={(e) => setBilling(e.target.value)} required className="h-8 text-sm" />
-        </div>
-      </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
-      <Button type="submit" size="sm" disabled={saving}>
-        {saving ? "Adding..." : "Add Provider"}
-      </Button>
-    </form>
   )
 }
 
