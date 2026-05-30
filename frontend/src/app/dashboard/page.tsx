@@ -167,9 +167,6 @@ function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (
         <CardTitle className="text-base">Proxy API Key</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p className="text-xs text-muted-foreground">
-          Use this as <code className="bg-muted px-1 rounded">ANTHROPIC_API_KEY</code> in Claude Code.
-        </p>
         <div className="flex items-center gap-2">
           <code className="flex-1 text-xs bg-muted px-3 py-2 rounded font-mono break-all">{user.api_key}</code>
           <Button variant="outline" size="sm" onClick={handleCopy}>
@@ -185,6 +182,22 @@ function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (
         <Button variant="outline" size="sm" onClick={handleRotate} disabled={rotating}>
           {rotating ? "Rotating..." : "Rotate Key"}
         </Button>
+        <div className="pt-2 border-t space-y-2">
+          <p className="text-xs font-medium">How to use with Claude Code</p>
+          <p className="text-xs text-muted-foreground">Set these two environment variables, then run <code className="bg-muted px-1 rounded">claude</code>:</p>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">macOS / Linux</p>
+            <div className="font-mono text-xs bg-muted rounded px-3 py-2 break-all select-all">
+              {"export ANTHROPIC_API_KEY="}{user.api_key}{"\nexport ANTHROPIC_BASE_URL=https://claude-proxy-backend.fly.dev"}
+            </div>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Windows (PowerShell)</p>
+            <div className="font-mono text-xs bg-muted rounded px-3 py-2 break-all select-all">
+              {"$env:ANTHROPIC_API_KEY=\""}{user.api_key}{"\"\n$env:ANTHROPIC_BASE_URL=\"https://claude-proxy-backend.fly.dev\""}
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )
