@@ -135,16 +135,29 @@ function CapEditor({ cap }: { cap: number }) {
   )
 }
 
-function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (u: { api_key: string; cap: number; total_input_tokens: number; total_output_tokens: number; email: string; id: string; is_admin: boolean; created_at: string }) => void }) {
+function CopyBlock({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false)
-  const [rotating, setRotating] = useState(false)
-  const [newKey, setNewKey] = useState("")
-
   const handleCopy = () => {
-    navigator.clipboard.writeText(user.api_key)
+    navigator.clipboard.writeText(value)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
+  return (
+    <div className="space-y-1">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="flex items-center gap-2">
+        <code className="flex-1 text-xs bg-muted rounded px-3 py-2 font-mono break-all">{value}</code>
+        <Button variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
+          {copied ? "Copied!" : "Copy"}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (u: { api_key: string; cap: number; total_input_tokens: number; total_output_tokens: number; email: string; id: string; is_admin: boolean; created_at: string }) => void }) {
+  const [rotating, setRotating] = useState(false)
+  const [newKey, setNewKey] = useState("")
 
   const handleRotate = async () => {
     if (!confirm("Generate a new API key? The old key stops working immediately.")) return
@@ -167,37 +180,25 @@ function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (
         <CardTitle className="text-base">Proxy API Key</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex items-center gap-2">
-          <code className="flex-1 text-xs bg-muted px-3 py-2 rounded font-mono break-all">{user.api_key}</code>
-          <Button variant="outline" size="sm" onClick={handleCopy}>
-            {copied ? "Copied!" : "Copy"}
-          </Button>
-        </div>
         {newKey && (
           <div className="p-3 bg-green-50 dark:bg-green-950 rounded-md space-y-1">
             <p className="text-xs font-medium text-green-700 dark:text-green-300">New key — copy it now:</p>
             <code className="text-xs font-mono break-all block">{newKey}</code>
           </div>
         )}
+        <div className="space-y-3">
+          <CopyBlock
+            label="macOS / Linux"
+            value={`ANTHROPIC_API_KEY=${user.api_key} ANTHROPIC_BASE_URL=https://claude-proxy-backend.fly.dev claude --bare`}
+          />
+          <CopyBlock
+            label="Windows (PowerShell)"
+            value={`$env:ANTHROPIC_API_KEY="${user.api_key}"; $env:ANTHROPIC_BASE_URL="https://claude-proxy-backend.fly.dev"; claude --bare`}
+          />
+        </div>
         <Button variant="outline" size="sm" onClick={handleRotate} disabled={rotating}>
           {rotating ? "Rotating..." : "Rotate Key"}
         </Button>
-        <div className="pt-2 border-t space-y-2">
-          <p className="text-xs font-medium">How to use with Claude Code</p>
-          <p className="text-xs text-muted-foreground">Set these two environment variables, then run <code className="bg-muted px-1 rounded">claude</code>:</p>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">macOS / Linux</p>
-            <div className="font-mono text-xs bg-muted rounded px-3 py-2 break-all select-all">
-              {"export ANTHROPIC_API_KEY="}{user.api_key}{"\nexport ANTHROPIC_BASE_URL=https://claude-proxy-backend.fly.dev"}
-            </div>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Windows (PowerShell)</p>
-            <div className="font-mono text-xs bg-muted rounded px-3 py-2 break-all select-all">
-              {"$env:ANTHROPIC_API_KEY=\""}{user.api_key}{"\"\n$env:ANTHROPIC_BASE_URL=\"https://claude-proxy-backend.fly.dev\""}
-            </div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   )
