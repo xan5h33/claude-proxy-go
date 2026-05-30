@@ -7,20 +7,24 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
   const url = new URL(path.join("/"), BACKEND + "/")
   url.search = req.nextUrl.search
 
-  const headers = new Headers(req.headers)
-  headers.delete("host")
+  const reqHeaders = new Headers(req.headers)
+  reqHeaders.delete("host")
 
   const res = await fetch(url, {
     method: req.method,
-    headers,
+    headers: reqHeaders,
     body: req.method !== "GET" && req.method !== "HEAD" ? req.body : undefined,
     // @ts-expect-error - duplex required for streaming body
     duplex: "half",
   })
 
+  const resHeaders = new Headers(res.headers)
+  resHeaders.delete("content-encoding")
+  resHeaders.delete("transfer-encoding")
+
   return new NextResponse(res.body, {
     status: res.status,
-    headers: res.headers,
+    headers: resHeaders,
   })
 }
 
