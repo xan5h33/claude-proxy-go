@@ -47,9 +47,9 @@ export default function DashboardPage() {
   )
 }
 
-function UsageCard({ user }: { user: { balance: number; total_input_tokens: number; total_output_tokens: number } }) {
+function UsageCard({ user }: { user: { balance?: number; total_input_tokens: number; total_output_tokens: number } }) {
   const total = user.total_input_tokens + user.total_output_tokens
-  const empty = user.balance <= 0
+  const empty = (user.balance ?? 0) <= 0
 
   return (
     <Card>
@@ -63,7 +63,7 @@ function UsageCard({ user }: { user: { balance: number; total_input_tokens: numb
         <div className="grid grid-cols-2 gap-4 text-center mb-4">
           <div className="p-3 bg-muted/40 rounded-lg">
             <p className={`text-3xl font-bold ${empty ? "text-red-500" : "text-primary"}`}>
-              {user.balance.toLocaleString()}
+              {(user.balance ?? 0).toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground mt-1">Tokens remaining</p>
           </div>
@@ -101,7 +101,7 @@ function CopyBlock({ label, value }: { label: string; value: string }) {
   )
 }
 
-function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (u: { api_key: string; balance: number; total_input_tokens: number; total_output_tokens: number; email: string; id: string; is_admin: boolean; created_at: string }) => void }) {
+function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (u: import("@/lib/api").User) => void }) {
   const [rotating, setRotating] = useState(false)
   const [newKey, setNewKey] = useState("")
 

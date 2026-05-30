@@ -51,7 +51,7 @@ export interface User {
   email: string
   api_key: string
   is_admin: boolean
-  balance: number
+  balance: number | undefined
   total_input_tokens: number
   total_output_tokens: number
   created_at: string

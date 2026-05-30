@@ -103,8 +103,8 @@ function UserCard({ user, onDelete }: { user: User; onDelete: () => void }) {
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="outline">{total.toLocaleString()} used</Badge>
-            <Badge variant={user.balance <= 0 ? "destructive" : "secondary"}>
-              {user.balance.toLocaleString()} left
+            <Badge variant={(user.balance ?? 0) <= 0 ? "destructive" : "secondary"}>
+              {(user.balance ?? 0).toLocaleString()} left
             </Badge>
           </div>
         </div>

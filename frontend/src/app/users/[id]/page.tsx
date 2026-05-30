@@ -82,7 +82,7 @@ export default function UserDetailPage() {
   if (!user) return null
 
   const total = user.total_input_tokens + user.total_output_tokens
-  const empty = user.balance <= 0
+  const empty = (user.balance ?? 0) <= 0
 
   return (
     <main className="min-h-screen bg-background p-8">
@@ -109,7 +109,7 @@ export default function UserDetailPage() {
               <div className="grid grid-cols-2 gap-4 text-center mb-4">
                 <div className="p-3 bg-muted/40 rounded-lg">
                   <p className={`text-3xl font-bold ${empty ? "text-red-500" : "text-primary"}`}>
-                    {user.balance.toLocaleString()}
+                    {(user.balance ?? 0).toLocaleString()}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Tokens remaining</p>
                 </div>
