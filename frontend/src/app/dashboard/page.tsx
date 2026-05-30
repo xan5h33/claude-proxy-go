@@ -215,14 +215,28 @@ function MyProvidersCard() {
       <CardContent className="space-y-4">
         <div className="p-4 bg-muted/40 rounded-lg space-y-3">
           <p className="text-sm text-muted-foreground">
-            Run this script on any Mac with Claude Code to register it as a provider.
+            Run this script on the machine you want to register as a provider.
           </p>
-          <div className="font-mono text-xs bg-background border rounded px-3 py-2 break-all select-all">
-            ./register.sh {user?.api_key}
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">macOS / Linux</p>
+            <div className="font-mono text-xs bg-background border rounded px-3 py-2 break-all select-all">
+              ./register.sh {user?.api_key}
+            </div>
           </div>
-          <a href="/register.sh" download="register.sh">
-            <Button size="sm" variant="outline">Download register.sh</Button>
-          </a>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Windows (PowerShell)</p>
+            <div className="font-mono text-xs bg-background border rounded px-3 py-2 break-all select-all">
+              .\register.ps1 {user?.api_key}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <a href="/register.sh" download="register.sh">
+              <Button size="sm" variant="outline">Download .sh</Button>
+            </a>
+            <a href="/register.ps1" download="register.ps1">
+              <Button size="sm" variant="outline">Download .ps1</Button>
+            </a>
+          </div>
         </div>
 
         {loading ? (
