@@ -59,7 +59,6 @@ export default function PortalPage() {
           <UserDashboard
             user={user}
             apiKey={apiKey}
-            onRefresh={async () => setUser(await me.get(apiKey))}
             onKeyRotated={(newKey) => {
               setApiKey(newKey)
               me.get(newKey).then(setUser)
@@ -74,38 +73,18 @@ export default function PortalPage() {
 function UserDashboard({
   user,
   apiKey,
-  onRefresh,
   onKeyRotated,
 }: {
   user: User
   apiKey: string
-  onRefresh: () => Promise<void>
   onKeyRotated: (newKey: string) => void
 }) {
-  const [cap, setCap] = useState(user.cap === 0 ? "" : String(user.cap))
-  const [savingCap, setSavingCap] = useState(false)
-  const [capMsg, setCapMsg] = useState("")
   const [rotating, setRotating] = useState(false)
   const [newKey, setNewKey] = useState("")
   const [copied, setCopied] = useState(false)
 
   const total = user.total_input_tokens + user.total_output_tokens
-  const overCap = user.cap > 0 && total >= user.cap
-
-  const handleSaveCap = async () => {
-    setSavingCap(true)
-    setCapMsg("")
-    try {
-      await me.updateCap(apiKey, cap === "" ? 0 : parseInt(cap, 10))
-      setCapMsg("Saved")
-      await onRefresh()
-      setTimeout(() => setCapMsg(""), 2000)
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Failed to save")
-    } finally {
-      setSavingCap(false)
-    }
-  }
+  const empty = user.balance <= 0
 
   const handleRotate = async () => {
     if (!confirm("Generate a new API key? The old key will stop working immediately.")) return
@@ -130,67 +109,30 @@ function UserDashboard({
 
   return (
     <div className="grid gap-6">
-      {/* Stats */}
+      {/* Balance & Usage */}
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Token Usage</CardTitle>
-            {overCap && <Badge variant="destructive">Cap Exceeded</Badge>}
+            <CardTitle className="text-base">Balance & Usage</CardTitle>
+            {empty && <Badge variant="destructive">No Balance</Badge>}
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <p className="text-2xl font-bold">{user.total_input_tokens.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">Input</p>
+          <div className="grid grid-cols-2 gap-4 text-center mb-4">
+            <div className="p-3 bg-muted/40 rounded-lg">
+              <p className={`text-3xl font-bold ${empty ? "text-red-500" : "text-primary"}`}>
+                {user.balance.toLocaleString()}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Tokens remaining</p>
             </div>
-            <div>
-              <p className="text-2xl font-bold">{user.total_output_tokens.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">Output</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold">{total.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">Total</p>
+            <div className="p-3 bg-muted/40 rounded-lg">
+              <p className="text-3xl font-bold">{total.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground mt-1">Tokens used</p>
             </div>
           </div>
-          {user.cap > 0 && (
-            <div className="mt-4">
-              <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                <span>{total.toLocaleString()} used</span>
-                <span>{user.cap.toLocaleString()} cap</span>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${overCap ? "bg-red-500" : "bg-primary"}`}
-                  style={{ width: `${Math.min(100, (total / user.cap) * 100)}%` }}
-                />
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Cap */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Token Cap</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-1">
-            <Label>Max tokens (0 = unlimited)</Label>
-            <Input
-              type="number"
-              min="0"
-              placeholder="0"
-              value={cap}
-              onChange={(e) => setCap(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <Button onClick={handleSaveCap} disabled={savingCap}>
-              {savingCap ? "Saving..." : "Save Cap"}
-            </Button>
-            {capMsg && <span className="text-sm text-green-600">{capMsg}</span>}
+          <div className="grid grid-cols-2 gap-4 text-center text-sm text-muted-foreground">
+            <div>{user.total_input_tokens.toLocaleString()} input</div>
+            <div>{user.total_output_tokens.toLocaleString()} output</div>
           </div>
         </CardContent>
       </Card>

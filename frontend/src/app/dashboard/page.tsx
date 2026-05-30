@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
 export default function DashboardPage() {
   const { user, isAdmin, isLoading, logout, setAuth } = useAuth()
@@ -48,90 +47,37 @@ export default function DashboardPage() {
   )
 }
 
-function UsageCard({ user }: { user: { cap: number; total_input_tokens: number; total_output_tokens: number } }) {
+function UsageCard({ user }: { user: { balance: number; total_input_tokens: number; total_output_tokens: number } }) {
   const total = user.total_input_tokens + user.total_output_tokens
-  const overCap = user.cap > 0 && total >= user.cap
+  const empty = user.balance <= 0
 
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Token Usage</CardTitle>
-          {overCap && <Badge variant="destructive">Cap Exceeded</Badge>}
+          <CardTitle className="text-base">Balance & Usage</CardTitle>
+          {empty && <Badge variant="destructive">No Balance</Badge>}
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4 text-center mb-4">
-          <div>
-            <p className="text-2xl font-bold">{user.total_input_tokens.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">Input</p>
+        <div className="grid grid-cols-2 gap-4 text-center mb-4">
+          <div className="p-3 bg-muted/40 rounded-lg">
+            <p className={`text-3xl font-bold ${empty ? "text-red-500" : "text-primary"}`}>
+              {user.balance.toLocaleString()}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Tokens remaining</p>
           </div>
-          <div>
-            <p className="text-2xl font-bold">{user.total_output_tokens.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">Output</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold">{total.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">Total</p>
+          <div className="p-3 bg-muted/40 rounded-lg">
+            <p className="text-3xl font-bold">{total.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">Tokens used</p>
           </div>
         </div>
-        {user.cap > 0 && (
-          <div>
-            <div className="flex justify-between text-xs text-muted-foreground mb-1">
-              <span>{total.toLocaleString()} used</span>
-              <span>{user.cap.toLocaleString()} cap</span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all ${overCap ? "bg-red-500" : "bg-primary"}`}
-                style={{ width: `${Math.min(100, (total / user.cap) * 100)}%` }}
-              />
-            </div>
-          </div>
-        )}
-        <CapEditor cap={user.cap} />
+        <div className="grid grid-cols-2 gap-4 text-center text-sm text-muted-foreground">
+          <div>{user.total_input_tokens.toLocaleString()} input</div>
+          <div>{user.total_output_tokens.toLocaleString()} output</div>
+        </div>
       </CardContent>
     </Card>
-  )
-}
-
-function CapEditor({ cap }: { cap: number }) {
-  const [value, setValue] = useState(cap === 0 ? "" : String(cap))
-  const [saving, setSaving] = useState(false)
-  const [msg, setMsg] = useState("")
-
-  const handleSave = async () => {
-    setSaving(true)
-    setMsg("")
-    try {
-      await dashboard.updateCap(value === "" ? 0 : parseInt(value, 10))
-      setMsg("Saved")
-      setTimeout(() => setMsg(""), 2000)
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Failed")
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="mt-4 pt-4 border-t space-y-2">
-      <Label className="text-xs">Token cap (0 = unlimited)</Label>
-      <div className="flex gap-2">
-        <Input
-          type="number"
-          min="0"
-          placeholder="0"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="h-8 text-sm"
-        />
-        <Button size="sm" onClick={handleSave} disabled={saving}>
-          {saving ? "..." : "Save"}
-        </Button>
-        {msg && <span className="text-xs text-green-600 self-center">{msg}</span>}
-      </div>
-    </div>
   )
 }
 
@@ -155,7 +101,7 @@ function CopyBlock({ label, value }: { label: string; value: string }) {
   )
 }
 
-function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (u: { api_key: string; cap: number; total_input_tokens: number; total_output_tokens: number; email: string; id: string; is_admin: boolean; created_at: string }) => void }) {
+function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (u: { api_key: string; balance: number; total_input_tokens: number; total_output_tokens: number; email: string; id: string; is_admin: boolean; created_at: string }) => void }) {
   const [rotating, setRotating] = useState(false)
   const [newKey, setNewKey] = useState("")
 

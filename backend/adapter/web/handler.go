@@ -94,18 +94,19 @@ func (h *Handler) ProxyMessages(c *gin.Context) {
 		return
 	}
 
+	if !user.IsAdmin && user.Balance <= 0 {
+		c.JSON(http.StatusPaymentRequired, gin.H{"error": "insufficient balance"})
+		return
+	}
+
 	headers := forwardHeaders(c.Request)
 	resp, err := h.proxy.Forward(c.Request.Context(), &application.ForwardRequest{
 		Method:  c.Request.Method,
 		Path:    c.Request.URL.RequestURI(),
 		Headers: headers,
 		Body:    rawBody,
-	}, user.ID, user.Cap, user.TotalInputTokens+user.TotalOutputTokens)
+	}, user.ID)
 	if err != nil {
-		if errors.Is(err, application.ErrCapExceeded) {
-			c.JSON(http.StatusForbidden, gin.H{"error": "token cap exceeded"})
-			return
-		}
 		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 		return
 	}
@@ -113,12 +114,13 @@ func (h *Handler) ProxyMessages(c *gin.Context) {
 
 	writeHeaders(c, resp)
 
+	ctx := c.Request.Context()
 	if resp.IsStream {
 		h.streamResponse(c, resp, user.ID, resp.ProviderID)
 	} else {
 		body, _ := io.ReadAll(resp.Body)
 		input, output := parseUsageJSON(body)
-		h.proxy.LogUsage(c.Request.Context(), user.ID, resp.ProviderID, input, output)
+		h.proxy.LogUsage(ctx, user.ID, resp.ProviderID, input, output)
 		c.Data(resp.StatusCode, resp.Headers["Content-Type"], body)
 	}
 }
@@ -132,7 +134,7 @@ func (h *Handler) ProxyPassthrough(c *gin.Context) {
 		Path:    c.Request.URL.RequestURI(),
 		Headers: headers,
 		Body:    body,
-	}, "", 0, 0)
+	}, "")
 	if err != nil {
 		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 		return
@@ -361,19 +363,24 @@ func (h *Handler) GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, u)
 }
 
-func (h *Handler) UpdateUserCap(c *gin.Context) {
+func (h *Handler) TopUpUser(c *gin.Context) {
 	var req struct {
-		Cap int64 `json:"cap"`
+		Amount int64 `json:"amount" binding:"required,min=1"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.users.UpdateCap(c.Request.Context(), c.Param("id"), req.Cap); err != nil {
+	if err := h.users.TopUp(c.Request.Context(), c.Param("id"), req.Amount); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.Status(http.StatusNoContent)
+	u, err := h.users.Get(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, u)
 }
 
 func (h *Handler) RotateUserKey(c *gin.Context) {
@@ -399,22 +406,6 @@ func (h *Handler) DeleteUser(c *gin.Context) {
 func (h *Handler) GetMe(c *gin.Context) {
 	user := c.MustGet("user").(*application.User)
 	c.JSON(http.StatusOK, user)
-}
-
-func (h *Handler) UpdateMeCap(c *gin.Context) {
-	user := c.MustGet("user").(*application.User)
-	var req struct {
-		Cap int64 `json:"cap"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if err := h.users.UpdateCap(c.Request.Context(), user.ID, req.Cap); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.Status(http.StatusNoContent)
 }
 
 func (h *Handler) RotateMeKey(c *gin.Context) {

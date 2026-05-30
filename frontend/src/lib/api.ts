@@ -51,7 +51,7 @@ export interface User {
   email: string
   api_key: string
   is_admin: boolean
-  cap: number
+  balance: number
   total_input_tokens: number
   total_output_tokens: number
   created_at: string
@@ -101,10 +101,10 @@ export const api = {
     list: () => request<User[]>("/admin/users"),
     get: (id: string) => request<User>(`/admin/users/${id}`),
     create: () => request<User>("/admin/users", { method: "POST" }),
-    updateCap: (id: string, cap: number) =>
-      request<void>(`/admin/users/${id}/cap`, {
-        method: "PATCH",
-        body: JSON.stringify({ cap }),
+    topUp: (id: string, amount: number) =>
+      request<User>(`/admin/users/${id}/topup`, {
+        method: "POST",
+        body: JSON.stringify({ amount }),
       }),
     rotateKey: (id: string) =>
       request<User>(`/admin/users/${id}/rotate-key`, { method: "POST" }),
@@ -133,8 +133,6 @@ export async function meRequest<T>(apiKey: string, path: string, init?: RequestI
 
 export const me = {
   get: (key: string) => meRequest<User>(key, "/user/me"),
-  updateCap: (key: string, cap: number) =>
-    meRequest<void>(key, "/user/me/cap", { method: "PATCH", body: JSON.stringify({ cap }) }),
   rotateKey: (key: string) =>
     meRequest<User>(key, "/user/me/rotate-key", { method: "POST" }),
   listProviders: (key: string) => meRequest<Provider[]>(key, "/user/me/providers"),
@@ -155,7 +153,6 @@ export const me = {
 // JWT-based self-service (uses stored token instead of passed key)
 export const dashboard = {
   getMe: () => request<User>("/user/me"),
-  updateCap: (cap: number) => request<void>("/user/me/cap", { method: "PATCH", body: JSON.stringify({ cap }) }),
   rotateKey: () => request<User>("/user/me/rotate-key", { method: "POST" }),
   listProviders: () => request<Provider[]>("/user/me/providers"),
   registerProvider: (data: {

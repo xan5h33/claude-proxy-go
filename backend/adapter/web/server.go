@@ -44,7 +44,6 @@ func NewRouter(h *Handler, users *application.UserService, auth *application.Aut
 	me.Use(jwtMw)
 	{
 		me.GET("/me", h.GetMe)
-		me.PATCH("/me/cap", h.UpdateMeCap)
 		me.POST("/me/rotate-key", h.RotateMeKey)
 		me.GET("/me/providers", h.ListMyProviders)
 		me.POST("/me/providers", h.RegisterMyProvider)
@@ -68,7 +67,7 @@ func NewRouter(h *Handler, users *application.UserService, auth *application.Aut
 		admin.POST("/users", h.CreateUser)
 		admin.GET("/users", h.ListUsers)
 		admin.GET("/users/:id", h.GetUser)
-		admin.PATCH("/users/:id/cap", h.UpdateUserCap)
+		admin.POST("/users/:id/topup", h.TopUpUser)
 		admin.POST("/users/:id/rotate-key", h.RotateUserKey)
 		admin.DELETE("/users/:id", h.DeleteUser)
 	}

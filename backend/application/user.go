@@ -10,7 +10,7 @@ type User struct {
 	Email             string    `json:"email,omitempty"`
 	APIKey            string    `json:"api_key"`
 	IsAdmin           bool      `json:"is_admin"`
-	Cap               int64     `json:"cap"`
+	Balance           int64     `json:"balance"`
 	TotalInputTokens  int64     `json:"total_input_tokens"`
 	TotalOutputTokens int64     `json:"total_output_tokens"`
 	CreatedAt         time.Time `json:"created_at"`
@@ -24,7 +24,8 @@ type UserRepository interface {
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindAll(ctx context.Context) ([]*User, error)
 	FindByID(ctx context.Context, id string) (*User, error)
-	UpdateCap(ctx context.Context, id string, cap int64) error
+	TopUp(ctx context.Context, id string, amount int64) error
+	DeductBalance(ctx context.Context, id string, amount int64) error
 	UpdateAPIKey(ctx context.Context, id, newKey string) error
 	SetAdmin(ctx context.Context, id string, admin bool) error
 	Delete(ctx context.Context, id string) error
@@ -62,8 +63,12 @@ func (s *UserService) List(ctx context.Context) ([]*User, error) {
 	return s.repo.FindAll(ctx)
 }
 
-func (s *UserService) UpdateCap(ctx context.Context, id string, cap int64) error {
-	return s.repo.UpdateCap(ctx, id, cap)
+func (s *UserService) TopUp(ctx context.Context, id string, amount int64) error {
+	return s.repo.TopUp(ctx, id, amount)
+}
+
+func (s *UserService) DeductBalance(ctx context.Context, id string, amount int64) error {
+	return s.repo.DeductBalance(ctx, id, amount)
 }
 
 func (s *UserService) RotateKey(ctx context.Context, id, newKey string) (*User, error) {

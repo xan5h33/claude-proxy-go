@@ -178,10 +178,10 @@ func (db *Postgres) Delete(ctx context.Context, id string) error {
 // ── UserRepository ────────────────────────────────────────────────────────────
 
 func scanUser(row interface{ Scan(...any) error }, u *application.User) error {
-	return row.Scan(&u.ID, &u.APIKey, &u.Email, &u.PasswordHash, &u.IsAdmin, &u.Cap, &u.TotalInputTokens, &u.TotalOutputTokens, &u.CreatedAt)
+	return row.Scan(&u.ID, &u.APIKey, &u.Email, &u.PasswordHash, &u.IsAdmin, &u.Balance, &u.TotalInputTokens, &u.TotalOutputTokens, &u.CreatedAt)
 }
 
-const userCols = `id, api_key, COALESCE(email,''), COALESCE(password_hash,''), is_admin, cap, total_input_tokens, total_output_tokens, created_at`
+const userCols = `id, api_key, COALESCE(email,''), COALESCE(password_hash,''), is_admin, balance, total_input_tokens, total_output_tokens, created_at`
 
 func (db *Postgres) CreateUser(ctx context.Context, u *application.User) error {
 	if u.Email != "" {
@@ -238,8 +238,13 @@ func (db *Postgres) FindUserByID(ctx context.Context, id string) (*application.U
 	return u, nil
 }
 
-func (db *Postgres) UpdateUserCap(ctx context.Context, id string, cap int64) error {
-	_, err := db.pool.Exec(ctx, `UPDATE users SET cap=$1 WHERE id=$2`, cap, id)
+func (db *Postgres) TopUpUserBalance(ctx context.Context, id string, amount int64) error {
+	_, err := db.pool.Exec(ctx, `UPDATE users SET balance=balance+$1 WHERE id=$2`, amount, id)
+	return err
+}
+
+func (db *Postgres) DeductUserBalance(ctx context.Context, id string, amount int64) error {
+	_, err := db.pool.Exec(ctx, `UPDATE users SET balance=GREATEST(0, balance-$1) WHERE id=$2`, amount, id)
 	return err
 }
 
@@ -269,9 +274,14 @@ func (db *Postgres) Log(ctx context.Context, u *application.UsageLog) error {
 }
 
 func (db *Postgres) AddTokens(ctx context.Context, userID, providerID string, input, output int) error {
+	total := int64(input + output)
 	_, err := db.pool.Exec(ctx, `
-		UPDATE users SET total_input_tokens=total_input_tokens+$1, total_output_tokens=total_output_tokens+$2 WHERE id=$3`,
-		input, output, userID)
+		UPDATE users
+		SET total_input_tokens=total_input_tokens+$1,
+		    total_output_tokens=total_output_tokens+$2,
+		    balance=GREATEST(0, balance-$3)
+		WHERE id=$4`,
+		input, output, total, userID)
 	if err != nil {
 		return err
 	}
@@ -332,7 +342,7 @@ func (db *Postgres) RunMigrations(ctx context.Context) error {
 			email               TEXT UNIQUE,
 			password_hash       TEXT,
 			is_admin            BOOLEAN NOT NULL DEFAULT false,
-			cap                 BIGINT NOT NULL DEFAULT 0,
+			balance             BIGINT NOT NULL DEFAULT 0,
 			total_input_tokens  BIGINT NOT NULL DEFAULT 0,
 			total_output_tokens BIGINT NOT NULL DEFAULT 0,
 			created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -362,10 +372,10 @@ func (db *Postgres) RunMigrations(ctx context.Context) error {
 			ADD COLUMN IF NOT EXISTS email               TEXT UNIQUE,
 			ADD COLUMN IF NOT EXISTS password_hash       TEXT,
 			ADD COLUMN IF NOT EXISTS is_admin            BOOLEAN NOT NULL DEFAULT false,
-			ADD COLUMN IF NOT EXISTS cap                 BIGINT NOT NULL DEFAULT 0,
+			ADD COLUMN IF NOT EXISTS balance             BIGINT NOT NULL DEFAULT 0,
 			ADD COLUMN IF NOT EXISTS total_input_tokens  BIGINT NOT NULL DEFAULT 0,
 			ADD COLUMN IF NOT EXISTS total_output_tokens BIGINT NOT NULL DEFAULT 0,
-			DROP COLUMN IF EXISTS balance,
+			DROP COLUMN IF EXISTS cap,
 			DROP COLUMN IF EXISTS total_used;
 
 		ALTER TABLE providers
@@ -402,8 +412,11 @@ func (r *userRepo) FindAll(ctx context.Context) ([]*application.User, error) {
 func (r *userRepo) FindByID(ctx context.Context, id string) (*application.User, error) {
 	return r.FindUserByID(ctx, id)
 }
-func (r *userRepo) UpdateCap(ctx context.Context, id string, cap int64) error {
-	return r.UpdateUserCap(ctx, id, cap)
+func (r *userRepo) TopUp(ctx context.Context, id string, amount int64) error {
+	return r.TopUpUserBalance(ctx, id, amount)
+}
+func (r *userRepo) DeductBalance(ctx context.Context, id string, amount int64) error {
+	return r.DeductUserBalance(ctx, id, amount)
 }
 func (r *userRepo) UpdateAPIKey(ctx context.Context, id, newKey string) error {
 	return r.UpdateUserAPIKey(ctx, id, newKey)

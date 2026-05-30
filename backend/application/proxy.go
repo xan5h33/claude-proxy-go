@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"log"
 	"time"
@@ -64,13 +63,7 @@ func NewProxyService(client AnthropicClient, selector Selector, usage UsageRepos
 	}
 }
 
-var ErrCapExceeded = errors.New("token cap exceeded")
-
-func (s *ProxyService) Forward(ctx context.Context, req *ForwardRequest, userID string, userCap, userTotal int64) (*ForwardResponse, error) {
-	if userCap > 0 && userTotal >= userCap {
-		return nil, ErrCapExceeded
-	}
-
+func (s *ProxyService) Forward(ctx context.Context, req *ForwardRequest, userID string) (*ForwardResponse, error) {
 	provider, err := s.selector.Select(ctx)
 	if err != nil {
 		return nil, err
