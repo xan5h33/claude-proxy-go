@@ -22,7 +22,7 @@ import { LayoutDashboard, History, Server, Users, Cpu, LogOut } from "lucide-rea
 const userNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/usage", label: "Usage History", icon: History },
-  { href: "/my-providers", label: "My Providers", icon: Server },
+  { href: "/my-providers", label: "Providers", icon: Server },
 ]
 
 const adminNav = [

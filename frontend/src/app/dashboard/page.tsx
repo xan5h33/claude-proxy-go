@@ -3,12 +3,11 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth"
-import { dashboard, Provider } from "@/lib/api"
+import { dashboard } from "@/lib/api"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 
 export default function DashboardPage() {
   const { user, isLoading, setAuth } = useAuth()
@@ -25,7 +24,6 @@ export default function DashboardPage() {
       <div className="max-w-2xl mx-auto grid gap-6">
         <UsageCard user={user} />
         <APIKeyCard user={user} onRotate={(u) => setAuth(localStorage.getItem("token")!, u)} />
-        <MyProvidersCard />
       </div>
     </AppShell>
   )
@@ -134,126 +132,3 @@ function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (
   )
 }
 
-function MyProvidersCard() {
-  const { user } = useAuth()
-  const [providers, setProviders] = useState<Provider[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const load = async () => {
-    try {
-      setProviders(await dashboard.listProviders())
-    } catch {
-      // not a blocker
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => { load() }, [])
-
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">My Providers</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="p-4 bg-muted/40 rounded-lg space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Run this script on the machine you want to register as a provider.
-          </p>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">macOS / Linux</p>
-            <div className="font-mono text-xs bg-background border rounded px-3 py-2 break-all select-all">
-              ./register.sh {user?.api_key}
-            </div>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Windows (PowerShell)</p>
-            <div className="font-mono text-xs bg-background border rounded px-3 py-2 break-all select-all">
-              .\register.ps1 {user?.api_key}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <a href="/register.sh" download="register.sh">
-              <Button size="sm" variant="outline">Download .sh</Button>
-            </a>
-            <a href="/register.ps1" download="register.ps1">
-              <Button size="sm" variant="outline">Download .ps1</Button>
-            </a>
-          </div>
-        </div>
-
-        {loading ? (
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        ) : providers.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-2">No providers yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {providers.map((p) => (
-              <ProviderRow key={p.id} provider={p} onUpdate={load} />
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-function ProviderRow({ provider, onUpdate }: { provider: Provider; onUpdate: () => void }) {
-  const [token, setToken] = useState("")
-  const [saving, setSaving] = useState(false)
-
-  const handleUpdateToken = async () => {
-    if (!token.trim()) return
-    setSaving(true)
-    try {
-      await dashboard.updateProviderTokens(provider.id, token.trim())
-      setToken("")
-      onUpdate()
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Failed")
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleToggle = async () => {
-    try {
-      await dashboard.setProviderActive(provider.id, !provider.is_active)
-      onUpdate()
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Failed")
-    }
-  }
-
-  const total = provider.total_input_tokens + provider.total_output_tokens
-
-  return (
-    <div className="flex items-center justify-between p-3 border rounded-lg">
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">{provider.name}</span>
-          <Badge variant={provider.is_active ? "default" : "secondary"} className="text-xs">
-            {provider.is_active ? "Active" : "Paused"}
-          </Badge>
-        </div>
-        <p className="text-xs text-muted-foreground">{total.toLocaleString()} tokens served</p>
-      </div>
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="New refresh token"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          className="h-7 text-xs w-40"
-          type="password"
-        />
-        <Button size="sm" variant="outline" onClick={handleUpdateToken} disabled={saving || !token.trim()} className="h-7 text-xs">
-          Update
-        </Button>
-        <Button size="sm" variant="ghost" onClick={handleToggle} className="h-7 text-xs">
-          {provider.is_active ? "Pause" : "Resume"}
-        </Button>
-      </div>
-    </div>
-  )
-}
