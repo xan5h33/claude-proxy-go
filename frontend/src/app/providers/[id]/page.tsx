@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { api, Provider, ProviderSettings } from "@/lib/api"
+import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -24,7 +25,6 @@ function fmtHour(h: number | null): string {
 
 export default function ProviderDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const router = useRouter()
   const [provider, setProvider] = useState<Provider | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -61,7 +61,7 @@ export default function ProviderDetailPage() {
       await api.providers.setActive(provider.id, !provider.is_active)
       await load()
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : "Failed to update")
+      alert(e instanceof Error ? e.message : "Failed")
     } finally {
       setToggling(false)
     }
@@ -99,19 +99,12 @@ export default function ProviderDetailPage() {
     : false
 
   return (
-    <main className="min-h-screen bg-background p-8">
+    <AppShell>
       <div className="max-w-2xl mx-auto">
-        <button
-          onClick={() => router.push("/providers")}
-          className="text-sm text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1"
-        >
-          ← Providers
-        </button>
-
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold">{provider.name}</h1>
-            <p className="text-xs text-muted-foreground font-mono mt-1">{provider.account_uuid}</p>
+            <h2 className="text-lg font-semibold">{provider.name}</h2>
+            <p className="text-xs text-muted-foreground font-mono">{provider.account_uuid}</p>
           </div>
           <div className="flex items-center gap-2">
             {isRateLimited && <Badge variant="destructive">Rate Limited</Badge>}
@@ -122,7 +115,6 @@ export default function ProviderDetailPage() {
         </div>
 
         <div className="grid gap-6">
-          {/* Stats */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Token Usage</CardTitle>
@@ -150,68 +142,41 @@ export default function ProviderDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Settings */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Settings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1">
-                <Label>Cap (tokens per window, 0 = unlimited)</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={cap}
-                  onChange={(e) => setCap(e.target.value)}
-                />
+                <Label>Daily cap (tokens, 0 = unlimited)</Label>
+                <Input type="number" min="0" placeholder="0" value={cap} onChange={(e) => setCap(e.target.value)} />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label>Window Start Hour (0–23, blank = always on)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="23"
-                    placeholder="e.g. 22 for 10 PM"
-                    value={startHour}
-                    onChange={(e) => setStartHour(e.target.value)}
-                  />
+                  <Label>Window start (hour 0–23)</Label>
+                  <Input type="number" min="0" max="23" placeholder="e.g. 22" value={startHour} onChange={(e) => setStartHour(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <Label>Window End Hour (0–23)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="23"
-                    placeholder="e.g. 2 for 2 AM"
-                    value={endHour}
-                    onChange={(e) => setEndHour(e.target.value)}
-                  />
+                  <Label>Window end (hour 0–23)</Label>
+                  <Input type="number" min="0" max="23" placeholder="e.g. 6" value={endHour} onChange={(e) => setEndHour(e.target.value)} />
                 </div>
               </div>
-
               {(startHour !== "" || endHour !== "") && (
                 <p className="text-xs text-muted-foreground">
-                  Window: {fmtHour(startHour === "" ? null : parseInt(startHour))} → {fmtHour(endHour === "" ? null : parseInt(endHour))}
+                  {fmtHour(startHour === "" ? null : parseInt(startHour))} → {fmtHour(endHour === "" ? null : parseInt(endHour))}
                   {startHour !== "" && endHour !== "" && parseInt(startHour) > parseInt(endHour) && " (crosses midnight)"}
                 </p>
               )}
-
               <div className="space-y-1">
                 <Label>Timezone</Label>
                 <select
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={timezone}
                   onChange={(e) => setTimezone(e.target.value)}
                 >
-                  {TIMEZONES.map((tz) => (
-                    <option key={tz} value={tz}>{tz}</option>
-                  ))}
+                  {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
                 </select>
               </div>
-
               <div className="flex items-center gap-3 pt-2">
                 <Button onClick={handleSaveSettings} disabled={saving}>
                   {saving ? "Saving..." : "Save Settings"}
@@ -221,28 +186,21 @@ export default function ProviderDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Pause / Resume */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Status</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                {provider.is_active
-                  ? "Provider is active and will receive requests."
-                  : "Provider is paused and will not receive requests."}
+                {provider.is_active ? "Active and receiving requests." : "Paused — not receiving requests."}
               </p>
-              <Button
-                variant={provider.is_active ? "destructive" : "default"}
-                onClick={handleToggleActive}
-                disabled={toggling}
-              >
-                {toggling ? "Updating..." : provider.is_active ? "Pause Provider" : "Resume Provider"}
+              <Button variant={provider.is_active ? "destructive" : "default"} onClick={handleToggleActive} disabled={toggling}>
+                {toggling ? "Updating..." : provider.is_active ? "Pause" : "Resume"}
               </Button>
             </CardContent>
           </Card>
         </div>
       </div>
-    </main>
+    </AppShell>
   )
 }

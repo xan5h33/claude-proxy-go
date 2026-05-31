@@ -45,10 +45,12 @@ func NewRouter(h *Handler, users *application.UserService, auth *application.Aut
 	{
 		me.GET("/me", h.GetMe)
 		me.POST("/me/rotate-key", h.RotateMeKey)
+		me.GET("/me/usage", h.ListMyUsage)
 		me.GET("/me/providers", h.ListMyProviders)
 		me.POST("/me/providers", h.RegisterMyProvider)
 		me.PATCH("/me/providers/:id/tokens", h.UpdateMyProviderTokens)
 		me.PATCH("/me/providers/:id/active", h.SetMyProviderActive)
+		me.PATCH("/me/providers/:id/settings", h.UpdateMyProviderSettings)
 	}
 
 	// Admin — JWT (is_admin) or x-admin-secret

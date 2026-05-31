@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { api, User } from "@/lib/api"
+import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +12,6 @@ import { Label } from "@/components/ui/label"
 
 export default function UserDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -85,22 +85,14 @@ export default function UserDetailPage() {
   const empty = (user.balance ?? 0) <= 0
 
   return (
-    <main className="min-h-screen bg-background p-8">
+    <AppShell>
       <div className="max-w-2xl mx-auto">
-        <button
-          onClick={() => router.push("/users")}
-          className="text-sm text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1"
-        >
-          ← Users
-        </button>
-
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold font-mono truncate">{user.email || user.api_key}</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold truncate">{user.email || user.api_key}</h2>
           {empty && <Badge variant="destructive">No Balance</Badge>}
         </div>
 
         <div className="grid gap-6">
-          {/* Balance & Usage */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Balance & Usage</CardTitle>
@@ -125,7 +117,6 @@ export default function UserDetailPage() {
             </CardContent>
           </Card>
 
-          {/* Top Up */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Top Up Balance</CardTitle>
@@ -152,7 +143,6 @@ export default function UserDetailPage() {
             </CardContent>
           </Card>
 
-          {/* API Key */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">API Key</CardTitle>
@@ -164,27 +154,20 @@ export default function UserDetailPage() {
                   {copied ? "Copied!" : "Copy"}
                 </Button>
               </div>
-
               {newKey && (
                 <div className="p-3 bg-green-50 dark:bg-green-950 rounded-md space-y-2">
-                  <p className="text-xs font-medium text-green-700 dark:text-green-300">New key generated — copy it now:</p>
+                  <p className="text-xs font-medium text-green-700 dark:text-green-300">New key — copy it now:</p>
                   <code className="text-xs font-mono break-all block">{newKey}</code>
                   <Button variant="outline" size="sm" onClick={() => handleCopy(newKey)}>Copy New Key</Button>
                 </div>
               )}
-
-              <div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Rotating generates a new key. The old key stops working immediately.
-                </p>
-                <Button variant="outline" onClick={handleRotateKey} disabled={rotating}>
-                  {rotating ? "Rotating..." : "Rotate API Key"}
-                </Button>
-              </div>
+              <Button variant="outline" onClick={handleRotateKey} disabled={rotating}>
+                {rotating ? "Rotating..." : "Rotate API Key"}
+              </Button>
             </CardContent>
           </Card>
         </div>
       </div>
-    </main>
+    </AppShell>
   )
 }

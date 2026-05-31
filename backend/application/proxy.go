@@ -123,6 +123,10 @@ func (s *ProxyService) Forward(ctx context.Context, req *ForwardRequest, userID 
 	return resp, nil
 }
 
+func (s *ProxyService) GetUserUsage(ctx context.Context, userID string) ([]*UsageLog, error) {
+	return s.usage.FindByUser(ctx, userID)
+}
+
 func (s *ProxyService) LogUsage(ctx context.Context, userID, providerID string, input, output int) {
 	if input == 0 && output == 0 {
 		return

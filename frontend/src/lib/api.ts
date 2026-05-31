@@ -57,6 +57,15 @@ export interface User {
   created_at: string
 }
 
+export interface UsageLog {
+  id: string
+  user_id: string
+  provider_id: string
+  input_tokens: number
+  output_tokens: number
+  created_at: string
+}
+
 export interface AuthResponse {
   token: string
   user: User
@@ -163,4 +172,7 @@ export const dashboard = {
     request<void>(`/user/me/providers/${id}/tokens`, { method: "PATCH", body: JSON.stringify({ refresh_token: refreshToken }) }),
   setProviderActive: (id: string, active: boolean) =>
     request<void>(`/user/me/providers/${id}/active`, { method: "PATCH", body: JSON.stringify({ active }) }),
+  updateProviderSettings: (id: string, settings: ProviderSettings) =>
+    request<void>(`/user/me/providers/${id}/settings`, { method: "PATCH", body: JSON.stringify(settings) }),
+  getUsage: () => request<UsageLog[]>("/user/me/usage"),
 }

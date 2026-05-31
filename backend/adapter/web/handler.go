@@ -419,6 +419,42 @@ func (h *Handler) RotateMeKey(c *gin.Context) {
 	c.JSON(http.StatusOK, u)
 }
 
+func (h *Handler) ListMyUsage(c *gin.Context) {
+	user := c.MustGet("user").(*application.User)
+	logs, err := h.proxy.GetUserUsage(c.Request.Context(), user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, logs)
+}
+
+func (h *Handler) UpdateMyProviderSettings(c *gin.Context) {
+	user := c.MustGet("user").(*application.User)
+	p, err := h.providers.Get(c.Request.Context(), c.Param("id"))
+	if err != nil || p == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	if p.UserID != user.ID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+	var req application.ProviderSettings
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if req.WindowTimezone == "" {
+		req.WindowTimezone = "UTC"
+	}
+	if err := h.providers.UpdateSettings(c.Request.Context(), p.ID, req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 func forwardHeaders(r *http.Request) map[string]string {

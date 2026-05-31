@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { api, User } from "@/lib/api"
+import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -41,13 +42,10 @@ export default function UsersPage() {
   if (error) return <div className="p-8 text-red-500">{error}</div>
 
   return (
-    <main className="min-h-screen bg-background p-8">
+    <AppShell>
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Users</h1>
-            <p className="text-muted-foreground">{users.length} API keys</p>
-          </div>
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-muted-foreground">{users.length} users</p>
           <Button onClick={handleCreate} disabled={creating}>
             {creating ? "Creating..." : "Create API Key"}
           </Button>
@@ -62,7 +60,7 @@ export default function UsersPage() {
           ))}
         </div>
       </div>
-    </main>
+    </AppShell>
   )
 }
 
@@ -70,7 +68,6 @@ function UserCard({ user, onDelete }: { user: User; onDelete: () => void }) {
   const router = useRouter()
   const [deleting, setDeleting] = useState(false)
   const [copied, setCopied] = useState(false)
-
   const total = user.total_input_tokens + user.total_output_tokens
 
   const handleCopy = () => {
@@ -80,7 +77,7 @@ function UserCard({ user, onDelete }: { user: User; onDelete: () => void }) {
   }
 
   const handleDelete = async () => {
-    if (!confirm("Delete this API key?")) return
+    if (!confirm("Delete this user?")) return
     setDeleting(true)
     try {
       await api.users.delete(user.id)
@@ -99,7 +96,7 @@ function UserCard({ user, onDelete }: { user: User; onDelete: () => void }) {
             className="text-sm font-mono hover:underline cursor-pointer"
             onClick={() => router.push(`/users/${user.id}`)}
           >
-            {user.api_key}
+            {user.email || user.api_key}
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="outline">{total.toLocaleString()} used</Badge>

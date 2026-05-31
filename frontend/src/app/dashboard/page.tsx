@@ -4,13 +4,14 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth"
 import { dashboard, Provider } from "@/lib/api"
+import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 
 export default function DashboardPage() {
-  const { user, isAdmin, isLoading, logout, setAuth } = useAuth()
+  const { user, isLoading, setAuth } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -20,30 +21,13 @@ export default function DashboardPage() {
   if (isLoading || !user) return <div className="p-8">Loading...</div>
 
   return (
-    <main className="min-h-screen bg-background p-8">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">{user.email}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            {isAdmin && (
-              <Button variant="outline" size="sm" onClick={() => router.push("/")}>
-                Admin Panel
-              </Button>
-            )}
-            <Button variant="ghost" size="sm" onClick={logout}>Sign out</Button>
-          </div>
-        </div>
-
-        <div className="grid gap-6">
-          <UsageCard user={user} />
-          <APIKeyCard user={user} onRotate={(u) => setAuth(localStorage.getItem("token")!, u)} />
-          <MyProvidersCard />
-        </div>
+    <AppShell>
+      <div className="max-w-2xl mx-auto grid gap-6">
+        <UsageCard user={user} />
+        <APIKeyCard user={user} onRotate={(u) => setAuth(localStorage.getItem("token")!, u)} />
+        <MyProvidersCard />
       </div>
-    </main>
+    </AppShell>
   )
 }
 
@@ -253,7 +237,7 @@ function ProviderRow({ provider, onUpdate }: { provider: Provider; onUpdate: () 
             {provider.is_active ? "Active" : "Paused"}
           </Badge>
         </div>
-        <p className="text-xs text-muted-foreground">{total.toLocaleString()} tokens used</p>
+        <p className="text-xs text-muted-foreground">{total.toLocaleString()} tokens served</p>
       </div>
       <div className="flex items-center gap-2">
         <Input
