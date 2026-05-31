@@ -300,7 +300,7 @@ func (db *Postgres) FindByUser(ctx context.Context, userID string) ([]*applicati
 	}
 	defer rows.Close()
 
-	var out []*application.UsageLog
+	out := make([]*application.UsageLog, 0)
 	for rows.Next() {
 		u := &application.UsageLog{}
 		if err := rows.Scan(&u.ID, &u.UserID, &u.ProviderID, &u.InputTokens, &u.OutputTokens, &u.CreatedAt); err != nil {

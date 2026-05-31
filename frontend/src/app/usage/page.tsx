@@ -20,7 +20,7 @@ export default function UsagePage() {
 
   useEffect(() => {
     dashboard.getUsage()
-      .then(setLogs)
+      .then((data) => setLogs(data ?? []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
