@@ -77,13 +77,6 @@ export default function HomePage() {
 
         {/* Hero */}
         <section className="border-b border-border px-16 pt-20 pb-20">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 border border-border px-3 py-1 text-xs text-muted-foreground mb-10">
-            <span className="text-primary font-bold">new</span>
-            Top up from $2. No monthly commitment.
-            {ready && <Link href={dashHref} className="text-primary hover:opacity-75 transition-opacity">Try it</Link>}
-          </div>
-
           <h1 className="text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight mb-7">
             Your Claude sits idle<br />
             <span className="text-primary">every night.</span>
