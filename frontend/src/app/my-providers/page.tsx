@@ -39,11 +39,11 @@ export default function MyProvidersPage() {
 
   useEffect(() => { load() }, [])
 
-  if (isLoading || !user) return <div className="p-8">Loading...</div>
-
   return (
     <AppShell>
-      <div className="max-w-3xl mx-auto">
+      {isLoading || !user
+        ? <div className="p-6 text-sm text-muted-foreground">Loading...</div>
+        : <div className="max-w-3xl mx-auto">
         <div className="mb-6 p-4 bg-muted/40 rounded-lg space-y-3">
           <p className="text-sm text-muted-foreground">
             Register a new machine as a provider by running the script below.
@@ -87,7 +87,7 @@ export default function MyProvidersPage() {
             ))}
           </div>
         )}
-      </div>
+      </div>}
     </AppShell>
   )
 }

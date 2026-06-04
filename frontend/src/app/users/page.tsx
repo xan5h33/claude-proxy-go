@@ -38,12 +38,13 @@ export default function UsersPage() {
 
   useEffect(() => { load() }, [])
 
-  if (loading) return <div className="p-8">Loading...</div>
-  if (error) return <div className="p-8 text-red-500">{error}</div>
-
   return (
     <AppShell>
-      <div className="max-w-4xl mx-auto">
+      {loading
+        ? <div className="p-6 text-sm text-muted-foreground">Loading...</div>
+        : error
+          ? <div className="p-6 text-sm text-destructive">{error}</div>
+          : <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <p className="text-muted-foreground">{users.length} users</p>
           <Button onClick={handleCreate} disabled={creating}>
@@ -59,7 +60,7 @@ export default function UsersPage() {
             <UserCard key={u.id} user={u} onDelete={load} />
           ))}
         </div>
-      </div>
+      </div>}
     </AppShell>
   )
 }

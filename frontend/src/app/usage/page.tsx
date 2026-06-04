@@ -25,14 +25,14 @@ export default function UsagePage() {
       .finally(() => setLoading(false))
   }, [])
 
-  if (isLoading || !user) return <div className="p-8">Loading...</div>
-
   const totalInput = logs.reduce((s, l) => s + l.input_tokens, 0)
   const totalOutput = logs.reduce((s, l) => s + l.output_tokens, 0)
 
   return (
     <AppShell>
-      <div className="max-w-3xl mx-auto">
+      {isLoading || !user
+        ? <div className="p-6 text-sm text-muted-foreground">Loading...</div>
+        : <div className="max-w-3xl mx-auto">
         {/* Summary */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <Card>
@@ -73,7 +73,7 @@ export default function UsagePage() {
             )}
           </CardContent>
         </Card>
-      </div>
+      </div>}
     </AppShell>
   )
 }

@@ -17,14 +17,15 @@ export default function DashboardPage() {
     if (!isLoading && !user) router.push("/login")
   }, [isLoading, user, router])
 
-  if (isLoading || !user) return <div className="p-8">Loading...</div>
-
   return (
     <AppShell>
-      <div className="max-w-2xl mx-auto grid gap-6">
-        <UsageCard user={user} />
-        <APIKeyCard user={user} onRotate={(u) => setAuth(localStorage.getItem("token")!, u)} />
-      </div>
+      {isLoading || !user
+        ? <div className="p-6 text-sm text-muted-foreground">Loading...</div>
+        : <div className="max-w-2xl mx-auto grid gap-6">
+            <UsageCard user={user} />
+            <APIKeyCard user={user} onRotate={(u) => setAuth(localStorage.getItem("token")!, u)} />
+          </div>
+      }
     </AppShell>
   )
 }

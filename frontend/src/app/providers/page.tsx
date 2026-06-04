@@ -25,12 +25,13 @@ export default function ProvidersPage() {
 
   useEffect(() => { load() }, [])
 
-  if (loading) return <div className="p-8">Loading...</div>
-  if (error) return <div className="p-8 text-red-500">{error}</div>
-
   return (
     <AppShell>
-      <div className="max-w-4xl mx-auto">
+      {loading
+        ? <div className="p-6 text-sm text-muted-foreground">Loading...</div>
+        : error
+          ? <div className="p-6 text-sm text-destructive">{error}</div>
+          : <div className="max-w-4xl mx-auto">
         <p className="text-muted-foreground mb-6">{providers.length} registered</p>
 
         <div className="grid gap-4">
@@ -43,7 +44,7 @@ export default function ProvidersPage() {
             <ProviderCard key={p.id} provider={p} onUpdate={load} />
           ))}
         </div>
-      </div>
+      </div>}
     </AppShell>
   )
 }
