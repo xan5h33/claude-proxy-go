@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth"
+import { Wordmark } from "@/components/wordmark"
 import {
   Sidebar,
   SidebarContent,
@@ -40,7 +41,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar className="border-r">
         <SidebarHeader className="px-4 py-4">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <img src="/logo-transparent.svg" alt="rel[ai]" className="h-7" />
+            <Wordmark className="text-lg" />
           </Link>
         </SidebarHeader>
 

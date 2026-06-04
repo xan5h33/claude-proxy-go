@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { auth } from "@/lib/api"
 import { useAuth } from "@/contexts/auth"
+import { Wordmark } from "@/components/wordmark"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -35,7 +36,7 @@ export default function RegisterPage() {
   return (
     <main className="min-h-screen bg-background flex flex-col">
       <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <Link href="/" className="text-primary font-mono font-bold tracking-tight">proxy</Link>
+        <Link href="/"><Wordmark className="text-lg" /></Link>
       </nav>
 
       <div className="flex-1 flex items-start justify-center pt-20 p-6">

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth"
+import { Wordmark } from "@/components/wordmark"
 
 const installTabs = [
   { label: "macOS / Linux / WSL", code: `$ curl -fsSL https://claude.ai/install.sh | bash` },
@@ -73,7 +74,7 @@ export default function HomePage() {
         {/* Nav — sticky */}
         <nav className="sticky top-0 z-50 border-b border-border bg-background px-16 py-4 flex items-center justify-between">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <img src="/logo-transparent.svg" alt="rel[ai]" className="h-11" />
+            <Wordmark className="text-2xl" />
           </Link>
           {ready && (
             <Link href={dashHref} className="text-base text-muted-foreground hover:text-foreground transition-colors">
@@ -90,7 +91,7 @@ export default function HomePage() {
           </h1>
           <p className="text-muted-foreground text-base leading-relaxed mb-12 max-w-xl">
             You pay $20/month but Claude Code only runs when you do.
-            The rest is wasted quota. This proxy lets others use your
+            The rest is wasted quota. Ladle lets others use your
             unused capacity while you sleep — and you earn from it.
             Or try Claude Code yourself for as little as $2, no subscription needed.
           </p>
@@ -104,7 +105,7 @@ export default function HomePage() {
         {/* Install */}
         <section className="border-b border-border px-16 py-16">
           <p className="text-sm text-muted-foreground uppercase tracking-widest mb-4">install claude code</p>
-          <p className="text-muted-foreground text-base mb-8">That&apos;s the only tool you need. Install it once, point it at this proxy, and you&apos;re done.</p>
+          <p className="text-muted-foreground text-base mb-8">That&apos;s the only tool you need. Install it once, point it at ladle, and you&apos;re done.</p>
           <div className="border border-border">
             <div className="flex border-b border-border flex-wrap">
               {installTabs.map((t, i) => (
@@ -142,7 +143,7 @@ export default function HomePage() {
               },
               {
                 title: "zero waste",
-                desc: "Claude's hourly and weekly limits reset whether you use them or not. This proxy makes sure nothing goes to waste.",
+                desc: "Claude's hourly and weekly limits reset whether you use them or not. Ladle makes sure nothing goes to waste.",
               },
             ].map((f, i) => (
               <div key={f.title} className={`p-8 ${i < 2 ? "border-b sm:border-b-0 sm:border-r border-border" : ""}`}>
@@ -240,7 +241,7 @@ export default function HomePage() {
 
         {/* Footer copyright */}
         <footer className="px-16 py-5 flex items-center justify-between text-xs text-muted-foreground">
-          <span>©2026 proxy</span>
+          <span>©2026 ladle</span>
           <div className="flex gap-6">
             <Link href="#" className="hover:text-foreground transition-colors">Privacy</Link>
             <Link href="#" className="hover:text-foreground transition-colors">Terms</Link>

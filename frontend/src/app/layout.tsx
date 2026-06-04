@@ -12,8 +12,8 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Proxy",
-  description: "Claude Code token proxy",
+  title: "ladle",
+  description: "Share your Claude quota, earn while you sleep.",
 };
 
 export default function RootLayout({
