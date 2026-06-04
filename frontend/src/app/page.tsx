@@ -71,12 +71,12 @@ export default function HomePage() {
       <div className="flex-1 flex flex-col mx-auto w-full max-w-5xl border-l border-r border-border">
 
         {/* Nav — sticky */}
-        <nav className="sticky top-0 z-50 border-b border-border bg-background px-16 py-6 flex items-center justify-between">
+        <nav className="sticky top-0 z-50 border-b border-border bg-background px-16 py-4 flex items-center justify-between">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <img src="/logo-transparent.svg" alt="rel[ai]" height="36" className="h-9" />
+            <img src="/logo-transparent.svg" alt="rel[ai]" className="h-11" />
           </Link>
           {ready && (
-            <Link href={dashHref} className="text-base text-muted-foreground hover:text-foreground transition-colors px-4 py-2 border border-border hover:border-primary">
+            <Link href={dashHref} className="text-base text-muted-foreground hover:text-foreground transition-colors">
               {dashLabel}
             </Link>
           )}
