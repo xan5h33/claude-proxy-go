@@ -5,10 +5,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { auth } from "@/lib/api"
 import { useAuth } from "@/contexts/auth"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -21,14 +17,8 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (password !== confirm) {
-      setError("Passwords don't match")
-      return
-    }
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters")
-      return
-    }
+    if (password !== confirm) { setError("Passwords don't match"); return }
+    if (password.length < 8) { setError("Password must be at least 8 characters"); return }
     setLoading(true)
     setError("")
     try {
@@ -43,64 +33,68 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">Claude Proxy</h1>
-          <p className="text-muted-foreground text-sm mt-1">Create your account</p>
+    <main className="min-h-screen bg-background flex flex-col">
+      <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <Link href="/" className="text-primary font-mono font-bold tracking-tight">proxy</Link>
+      </nav>
+
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="w-full max-w-sm">
+          <p className="text-xs text-primary tracking-widest uppercase mb-6">create account</p>
+          <h1 className="text-2xl font-bold mb-8">Get started.</h1>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">email</label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoFocus
+                className="w-full bg-card border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full bg-card border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">confirm password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+                className="w-full bg-card border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+            {error && <p className="text-xs text-destructive">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary text-primary-foreground text-sm font-semibold py-2.5 hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {loading ? "creating account..." : "create account →"}
+            </button>
+          </form>
+
+          <p className="text-xs text-muted-foreground mt-6">
+            already have an account?{" "}
+            <Link href="/login" className="text-primary hover:opacity-80 transition-opacity">
+              sign in
+            </Link>
+          </p>
         </div>
-
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Create account</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Password</Label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Confirm password</Label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                  required
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Creating account..." : "Create account"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          Already have an account?{" "}
-          <Link href="/login" className="underline hover:text-foreground">
-            Sign in
-          </Link>
-        </p>
       </div>
     </main>
   )

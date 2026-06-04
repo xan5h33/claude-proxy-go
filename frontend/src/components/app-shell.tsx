@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar className="border-r">
         <SidebarHeader className="px-4 py-4">
-          <span className="text-base font-semibold tracking-tight">Proxy</span>
+          <span className="text-base font-bold tracking-tight text-primary">proxy</span>
         </SidebarHeader>
 
         <SidebarContent>
@@ -86,7 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="flex flex-col flex-1 min-h-screen min-w-0">
         {/* Header */}
-        <header className="sticky top-0 z-10 flex h-12 items-center gap-3 border-b bg-white/95 backdrop-blur-sm px-4">
+        <header className="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-border bg-background/95 backdrop-blur-sm px-4">
           <SidebarTrigger className="-ml-1" />
           <div className="flex-1" />
           <span className="text-xs text-muted-foreground hidden sm:block">{user?.email}</span>

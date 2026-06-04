@@ -63,29 +63,18 @@ function UsageCard({ user }: { user: { balance?: number; total_input_tokens: num
   )
 }
 
-function CopyBlock({ label, value }: { label: string; value: string }) {
-  const [copied, setCopied] = useState(false)
-  const handleCopy = () => {
-    navigator.clipboard.writeText(value)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-  return (
-    <div className="space-y-1">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <div className="flex items-center gap-2">
-        <code className="flex-1 text-xs bg-muted rounded px-3 py-2 font-mono break-all">{value}</code>
-        <Button variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
-          {copied ? "Copied!" : "Copy"}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
 function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (u: import("@/lib/api").User) => void }) {
   const [rotating, setRotating] = useState(false)
   const [newKey, setNewKey] = useState("")
+  const [copied, setCopied] = useState(false)
+
+  const displayKey = newKey || user.api_key
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(displayKey)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const handleRotate = async () => {
     if (!confirm("Generate a new API key? The old key stops working immediately.")) return
@@ -109,20 +98,13 @@ function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (
       </CardHeader>
       <CardContent className="space-y-3">
         {newKey && (
-          <div className="p-3 bg-green-50 dark:bg-green-950 rounded-md space-y-1">
-            <p className="text-xs font-medium text-green-700 dark:text-green-300">New key — copy it now:</p>
-            <code className="text-xs font-mono break-all block">{newKey}</code>
-          </div>
+          <p className="text-xs font-medium text-green-700 dark:text-green-300">New key generated — copy it now.</p>
         )}
-        <div className="space-y-3">
-          <CopyBlock
-            label="macOS / Linux"
-            value={`ANTHROPIC_API_KEY=${user.api_key} ANTHROPIC_BASE_URL=https://claude-proxy-backend.fly.dev claude --bare`}
-          />
-          <CopyBlock
-            label="Windows (PowerShell)"
-            value={`$env:ANTHROPIC_API_KEY="${user.api_key}"; $env:ANTHROPIC_BASE_URL="https://claude-proxy-backend.fly.dev"; claude --bare`}
-          />
+        <div className="flex items-center gap-2">
+          <code className="flex-1 text-xs bg-muted rounded px-3 py-2 font-mono break-all">{displayKey}</code>
+          <Button variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
+            {copied ? "Copied!" : "Copy"}
+          </Button>
         </div>
         <Button variant="outline" size="sm" onClick={handleRotate} disabled={rotating}>
           {rotating ? "Rotating..." : "Rotate Key"}

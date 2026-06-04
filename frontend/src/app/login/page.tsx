@@ -5,10 +5,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { auth } from "@/lib/api"
 import { useAuth } from "@/contexts/auth"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,7 +21,7 @@ export default function LoginPage() {
     try {
       const res = await auth.login(email, password)
       setAuth(res.token, res.user)
-      router.push(res.user.is_admin ? "/" : "/dashboard")
+      router.push("/dashboard")
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Login failed")
     } finally {
@@ -34,54 +30,57 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">Claude Proxy</h1>
-          <p className="text-muted-foreground text-sm mt-1">Sign in to your account</p>
+    <main className="min-h-screen bg-background flex flex-col">
+      <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <Link href="/" className="text-primary font-mono font-bold tracking-tight">proxy</Link>
+      </nav>
+
+      <div className="flex-1 flex items-center justify-center p-6">
+        <div className="w-full max-w-sm">
+          <p className="text-xs text-primary tracking-widest uppercase mb-6">sign in</p>
+          <h1 className="text-2xl font-bold mb-8">Welcome back.</h1>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">email</label>
+              <input
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoFocus
+                className="w-full bg-card border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full bg-card border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
+              />
+            </div>
+            {error && <p className="text-xs text-destructive">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary text-primary-foreground text-sm font-semibold py-2.5 hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {loading ? "signing in..." : "sign in →"}
+            </button>
+          </form>
+
+          <p className="text-xs text-muted-foreground mt-6">
+            no account?{" "}
+            <Link href="/register" className="text-primary hover:opacity-80 transition-opacity">
+              create one
+            </Link>
+          </p>
         </div>
-
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Sign in</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Password</Label>
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in..." : "Sign in"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          No account?{" "}
-          <Link href="/register" className="underline hover:text-foreground">
-            Create one
-          </Link>
-        </p>
       </div>
     </main>
   )

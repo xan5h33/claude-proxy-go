@@ -48,6 +48,12 @@ export default function MyProvidersPage() {
           <p className="text-sm text-muted-foreground">
             Register a new machine as a provider by running the script below.
           </p>
+          <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-md">
+            <span className="text-amber-600 dark:text-amber-400 text-xs font-medium shrink-0">Before you run:</span>
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              Make sure you&apos;re logged into Claude Code on that machine first — run <code className="font-mono bg-amber-100 dark:bg-amber-900 px-1 rounded">claude login</code> if you haven&apos;t already.
+            </p>
+          </div>
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">macOS / Linux</p>
             <div className="font-mono text-xs bg-background border rounded px-3 py-2 break-all select-all">
