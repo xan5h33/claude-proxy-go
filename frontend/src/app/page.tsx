@@ -53,8 +53,10 @@ export default function HomePage() {
   const { user, isLoading } = useAuth()
   const [activeTab, setActiveTab] = useState(0)
 
-  const dashHref  = !isLoading && user ? "/dashboard" : "/login"
-  const dashLabel = !isLoading && user ? "open dashboard →" : "get started →"
+  const ready     = !isLoading
+  const loggedIn  = ready && !!user
+  const dashHref  = loggedIn ? "/dashboard" : "/login"
+  const dashLabel = loggedIn ? "open dashboard →" : "get started →"
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -66,9 +68,11 @@ export default function HomePage() {
           <Link href="/" className="text-primary text-base font-bold tracking-tight hover:opacity-80 transition-opacity">
             proxy
           </Link>
-          <Link href={dashHref} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            {dashLabel}
-          </Link>
+          {ready && (
+            <Link href={dashHref} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {dashLabel}
+            </Link>
+          )}
         </nav>
 
         {/* Hero */}
@@ -77,7 +81,7 @@ export default function HomePage() {
           <div className="inline-flex items-center gap-2 border border-border px-3 py-1 text-xs text-muted-foreground mb-10">
             <span className="text-primary font-bold">new</span>
             Top up from $2. No monthly commitment.
-            <Link href={dashHref} className="text-primary hover:opacity-75 transition-opacity">Try it</Link>
+            {ready && <Link href={dashHref} className="text-primary hover:opacity-75 transition-opacity">Try it</Link>}
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight mb-7">
@@ -92,12 +96,14 @@ export default function HomePage() {
             Or try Claude Code yourself for as little as $2, no subscription needed.
           </p>
 
-          <Link
-            href={dashHref}
-            className="inline-block bg-primary text-primary-foreground text-sm font-bold px-6 py-3 hover:opacity-90 transition-opacity"
-          >
-            {dashLabel}
-          </Link>
+          {ready && (
+            <Link
+              href={dashHref}
+              className="inline-block bg-primary text-primary-foreground text-sm font-bold px-6 py-3 hover:opacity-90 transition-opacity"
+            >
+              {dashLabel}
+            </Link>
+          )}
         </section>
 
         {/* Code block */}
