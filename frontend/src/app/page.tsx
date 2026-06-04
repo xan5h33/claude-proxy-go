@@ -103,8 +103,8 @@ export default function HomePage() {
 
         {/* Install */}
         <section className="border-b border-border px-16 py-16">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">install claude code</p>
-          <p className="text-muted-foreground text-sm mb-8">That&apos;s the only tool you need. Install it once, point it at this proxy, and you&apos;re done.</p>
+          <p className="text-sm text-muted-foreground uppercase tracking-widest mb-4">install claude code</p>
+          <p className="text-muted-foreground text-base mb-8">That&apos;s the only tool you need. Install it once, point it at this proxy, and you&apos;re done.</p>
           <div className="border border-border">
             <div className="flex border-b border-border flex-wrap">
               {installTabs.map((t, i) => (
@@ -129,7 +129,7 @@ export default function HomePage() {
 
         {/* Features */}
         <section className="border-b border-border px-16 py-16">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-10">how it works</p>
+          <p className="text-sm text-muted-foreground uppercase tracking-widest mb-10">how it works</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 border border-border">
             {[
               {
@@ -147,7 +147,7 @@ export default function HomePage() {
             ].map((f, i) => (
               <div key={f.title} className={`p-8 ${i < 2 ? "border-b sm:border-b-0 sm:border-r border-border" : ""}`}>
                 <p className="text-primary text-xs tracking-widest uppercase mb-4">{f.title}</p>
-                <p className="text-muted-foreground text-sm leading-relaxed">{f.desc}</p>
+                <p className="text-muted-foreground text-base leading-relaxed">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -155,20 +155,20 @@ export default function HomePage() {
 
         {/* Pricing */}
         <section className="border-b border-border px-16 py-16">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">pricing</p>
-          <p className="text-muted-foreground text-sm mb-10">One-time top-ups. No subscription, no expiry.</p>
+          <p className="text-sm text-muted-foreground uppercase tracking-widest mb-4">pricing</p>
+          <p className="text-muted-foreground text-base mb-10">One-time top-ups. No subscription, no expiry.</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 border border-border">
             {pricing.map((p, i) => (
               <div
                 key={p.label}
                 className={`p-8 flex flex-col gap-4 ${i < 2 ? "border-b sm:border-b-0 sm:border-r border-border" : ""} ${p.highlight ? "bg-card" : ""}`}
               >
-                <p className="text-xs text-muted-foreground uppercase tracking-widest">{p.label}</p>
+                <p className="text-sm text-muted-foreground uppercase tracking-widest">{p.label}</p>
                 <div>
                   <p className={`text-4xl font-bold ${p.highlight ? "text-primary" : ""}`}>{p.price}</p>
                   <p className="text-xs text-muted-foreground mt-1">{p.tokens}</p>
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed flex-1">{p.desc}</p>
+                <p className="text-base text-muted-foreground leading-relaxed flex-1">{p.desc}</p>
                 {ready && (
                   <Link
                     href={dashHref}
@@ -188,10 +188,10 @@ export default function HomePage() {
 
         {/* Privacy */}
         <section className="border-b border-border px-16 py-16">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-6">built for privacy</p>
+          <p className="text-sm text-muted-foreground uppercase tracking-widest mb-6">built for privacy</p>
           <div className="flex gap-3">
             <span className="text-primary text-sm shrink-0">[+]</span>
-            <p className="text-muted-foreground text-sm leading-relaxed max-w-lg">
+            <p className="text-muted-foreground text-base leading-relaxed max-w-lg">
               We never store, log, or inspect your request content. Token counts are recorded for billing purposes only.
               Providers see only anonymized traffic — no prompts, no responses, no user data.
             </p>
@@ -200,19 +200,19 @@ export default function HomePage() {
 
         {/* FAQ */}
         <section className="border-b border-border px-16 py-16">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-8">faq</p>
+          <p className="text-sm text-muted-foreground uppercase tracking-widest mb-8">faq</p>
           <div className="border border-border divide-y divide-border">
             {faqs.map((faq, i) => (
               <div key={i}>
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between px-5 py-4 text-sm text-left hover:text-primary transition-colors"
+                  className="w-full flex items-center justify-between px-5 py-4 text-base text-left hover:text-primary transition-colors"
                 >
                   <span>{faq.q}</span>
                   <span className="text-muted-foreground ml-4 shrink-0">{openFaq === i ? "−" : "+"}</span>
                 </button>
                 {openFaq === i && (
-                  <div className="px-5 pb-4 text-sm text-muted-foreground leading-relaxed border-t border-border pt-3">
+                  <div className="px-5 pb-4 text-base text-muted-foreground leading-relaxed border-t border-border pt-3">
                     {faq.a}
                   </div>
                 )}
