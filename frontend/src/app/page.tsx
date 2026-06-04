@@ -59,7 +59,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* Full-height column with sidelines */}
-      <div className="flex-1 flex flex-col mx-auto w-full max-w-3xl border-l border-r border-border">
+      <div className="flex-1 flex flex-col mx-auto w-full max-w-5xl border-l border-r border-border">
 
         {/* Nav */}
         <nav className="border-b border-border px-8 py-5 flex items-center justify-between">
@@ -80,12 +80,12 @@ export default function HomePage() {
             <Link href={dashHref} className="text-primary hover:opacity-75 transition-opacity">Get started</Link>
           </div>
 
-          <h1 className="text-5xl sm:text-6xl font-bold leading-[1.1] tracking-tight mb-7">
+          <h1 className="text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight mb-7">
             Share Claude Code<br />
             <span className="text-primary">across your team.</span>
           </h1>
 
-          <p className="text-muted-foreground text-lg leading-relaxed mb-12 max-w-lg">
+          <p className="text-muted-foreground text-base leading-relaxed mb-12 max-w-lg">
             Pool multiple Claude accounts behind a single API endpoint.
             One key, shared token balance, automatic failover.
           </p>
