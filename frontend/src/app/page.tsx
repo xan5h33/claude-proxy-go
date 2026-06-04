@@ -54,7 +54,7 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState(0)
 
   const dashHref  = !isLoading && user ? "/dashboard" : "/login"
-  const dashLabel = !isLoading && user ? "open dashboard →" : "sign in →"
+  const dashLabel = !isLoading && user ? "open dashboard →" : "get started →"
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -76,18 +76,20 @@ export default function HomePage() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 border border-border px-3 py-1 text-xs text-muted-foreground mb-10">
             <span className="text-primary font-bold">new</span>
-            Balance top-up available in dashboard.
-            <Link href={dashHref} className="text-primary hover:opacity-75 transition-opacity">Get started</Link>
+            Top up from $2. No monthly commitment.
+            <Link href={dashHref} className="text-primary hover:opacity-75 transition-opacity">Try it</Link>
           </div>
 
           <h1 className="text-4xl sm:text-5xl font-bold leading-[1.1] tracking-tight mb-7">
-            Share Claude Code<br />
-            <span className="text-primary">across your team.</span>
+            Your Claude sits idle<br />
+            <span className="text-primary">every night.</span>
           </h1>
 
-          <p className="text-muted-foreground text-base leading-relaxed mb-12 max-w-lg">
-            Pool multiple Claude accounts behind a single API endpoint.
-            One key, shared token balance, automatic failover.
+          <p className="text-muted-foreground text-base leading-relaxed mb-12 max-w-xl">
+            You pay $20/month but Claude Code only runs when you do.
+            The rest is wasted quota. This proxy lets others use your
+            unused capacity while you sleep — and you earn from it.
+            Or try Claude Code yourself for as little as $2, no subscription needed.
           </p>
 
           <Link
@@ -131,16 +133,16 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 border border-border">
             {[
               {
-                title: "account pooling",
-                desc: "Register multiple Claude accounts as providers. Requests route automatically to available ones.",
+                title: "passive income",
+                desc: "Register your Claude account as a provider. When you're not coding, others route through it. You earn from quota you'd waste anyway.",
               },
               {
-                title: "token balance",
-                desc: "Pre-purchase credits. Usage tracked per request, per user. No surprises.",
+                title: "try for $2",
+                desc: "No $20 subscription to test a new tool. Top up $2 in tokens, run Claude Code, see if it's worth it. Stop anytime.",
               },
               {
-                title: "drop-in replace",
-                desc: "Set two env vars. Nothing else in your workflow changes.",
+                title: "zero waste",
+                desc: "Claude's hourly and weekly limits reset whether you use them or not. This proxy makes sure nothing goes to waste.",
               },
             ].map((f, i) => (
               <div key={f.title} className={`p-8 ${i < 2 ? "border-b sm:border-b-0 sm:border-r border-border" : ""}`}>
