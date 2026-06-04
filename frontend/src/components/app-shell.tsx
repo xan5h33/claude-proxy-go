@@ -39,7 +39,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar className="border-r">
         <SidebarHeader className="px-4 py-4">
-          <Link href="/" className="text-base font-bold tracking-tight text-primary hover:opacity-80 transition-opacity">proxy</Link>
+          <Link href="/" className="hover:opacity-80 transition-opacity">
+            <img src="/logo-transparent.svg" alt="rel[ai]" className="h-7" />
+          </Link>
         </SidebarHeader>
 
         <SidebarContent>
