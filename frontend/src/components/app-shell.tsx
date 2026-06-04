@@ -39,7 +39,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar className="border-r">
         <SidebarHeader className="px-4 py-4">
-          <span className="text-base font-bold tracking-tight text-primary">proxy</span>
+          <Link href="/" className="text-base font-bold tracking-tight text-primary hover:opacity-80 transition-opacity">proxy</Link>
         </SidebarHeader>
 
         <SidebarContent>

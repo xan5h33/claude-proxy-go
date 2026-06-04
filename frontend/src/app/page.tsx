@@ -63,7 +63,7 @@ export default function HomePage() {
       {/* Nav */}
       <nav className="border-b border-border">
         <div className="max-w-3xl mx-auto px-6 py-5 flex items-center justify-between">
-          <span className="text-primary text-base font-bold tracking-tight">proxy</span>
+          <Link href="/" className="text-primary text-base font-bold tracking-tight hover:opacity-80 transition-opacity">proxy</Link>
           <Link href={dashHref} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             {dashLabel}
           </Link>
