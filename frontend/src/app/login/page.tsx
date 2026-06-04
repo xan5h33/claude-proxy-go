@@ -35,7 +35,7 @@ export default function LoginPage() {
         <Link href="/" className="text-primary font-mono font-bold tracking-tight">proxy</Link>
       </nav>
 
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="flex-1 flex items-start justify-center pt-20 p-6">
         <div className="w-full max-w-sm">
           <p className="text-xs text-primary tracking-widest uppercase mb-6">sign in</p>
           <h1 className="text-2xl font-bold mb-8">Welcome back.</h1>
