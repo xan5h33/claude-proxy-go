@@ -66,24 +66,43 @@ function UsageCard({ user }: { user: { balance?: number; total_input_tokens: num
 
 function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (u: import("@/lib/api").User) => void }) {
   const [rotating, setRotating] = useState(false)
-  const [newKey, setNewKey] = useState("")
-  const [copied, setCopied] = useState(false)
+  const [newKey, setNewKey] = useState(false)
+  const [copiedKey, setCopiedKey] = useState(false)
+  const [activeTab, setActiveTab] = useState(0)
+  const [copiedCmd, setCopiedCmd] = useState(false)
 
-  const displayKey = newKey || user.api_key
+  const key = user.api_key
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(displayKey)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const cmds = [
+    {
+      label: "macOS / Linux",
+      value: `ANTHROPIC_API_KEY=${key} ANTHROPIC_BASE_URL=https://claude-proxy-backend.fly.dev claude --bare`,
+    },
+    {
+      label: "Windows",
+      value: `$env:ANTHROPIC_API_KEY="${key}"; $env:ANTHROPIC_BASE_URL="https://claude-proxy-backend.fly.dev"; claude --bare`,
+    },
+  ]
+
+  const handleCopyKey = () => {
+    navigator.clipboard.writeText(key)
+    setCopiedKey(true)
+    setTimeout(() => setCopiedKey(false), 2000)
+  }
+
+  const handleCopyCmd = () => {
+    navigator.clipboard.writeText(cmds[activeTab].value)
+    setCopiedCmd(true)
+    setTimeout(() => setCopiedCmd(false), 2000)
   }
 
   const handleRotate = async () => {
     if (!confirm("Generate a new API key? The old key stops working immediately.")) return
     setRotating(true)
-    setNewKey("")
+    setNewKey(false)
     try {
       const updated = await dashboard.rotateKey()
-      setNewKey(updated.api_key)
+      setNewKey(true)
       onRotate(updated)
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Failed")
@@ -97,16 +116,48 @@ function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (
       <CardHeader className="pb-2">
         <CardTitle className="text-base">Proxy API Key</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         {newKey && (
-          <p className="text-xs font-medium text-green-700 dark:text-green-300">New key generated — copy it now.</p>
+          <p className="text-xs font-medium text-primary">New key generated — copy it now.</p>
         )}
-        <div className="flex items-center gap-2">
-          <code className="flex-1 text-xs bg-muted rounded px-3 py-2 font-mono break-all">{displayKey}</code>
-          <Button variant="outline" size="sm" onClick={handleCopy} className="shrink-0">
-            {copied ? "Copied!" : "Copy"}
-          </Button>
+
+        {/* Key */}
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">your key</p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 text-xs bg-muted px-3 py-2 font-mono break-all">{key}</code>
+            <Button variant="outline" size="sm" onClick={handleCopyKey} className="shrink-0">
+              {copiedKey ? "Copied!" : "Copy"}
+            </Button>
+          </div>
         </div>
+
+        {/* Usage command */}
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">run claude code with this proxy</p>
+          <div className="border border-border">
+            <div className="flex border-b border-border">
+              {cmds.map((c, i) => (
+                <button
+                  key={c.label}
+                  onClick={() => setActiveTab(i)}
+                  className={`px-4 py-2 text-xs transition-colors ${
+                    activeTab === i ? "text-foreground border-b border-primary -mb-px" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-start gap-2 px-4 py-3">
+              <code className="flex-1 text-xs text-muted-foreground font-mono break-all leading-relaxed">{cmds[activeTab].value}</code>
+              <Button variant="outline" size="sm" onClick={handleCopyCmd} className="shrink-0 mt-0.5">
+                {copiedCmd ? "Copied!" : "Copy"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
         <Button variant="outline" size="sm" onClick={handleRotate} disabled={rotating}>
           {rotating ? "Rotating..." : "Rotate Key"}
         </Button>

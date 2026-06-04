@@ -6,16 +6,20 @@ import { useAuth } from "@/contexts/auth"
 
 const tabs = [
   {
-    label: "macOS / Linux",
-    code: `$ ANTHROPIC_API_KEY=sk-proxy-xxxxxxxxxxxx \\
-  ANTHROPIC_BASE_URL=https://claude-proxy-backend.fly.dev \\
-  claude --bare`,
+    label: "macOS / Linux / WSL",
+    code: `$ curl -fsSL https://claude.ai/install.sh | bash`,
   },
   {
-    label: "Windows",
-    code: `$env:ANTHROPIC_API_KEY="sk-proxy-xxxxxxxxxxxx"
-$env:ANTHROPIC_BASE_URL="https://claude-proxy-backend.fly.dev"
-claude --bare`,
+    label: "Windows (PowerShell)",
+    code: `$ irm https://claude.ai/install.ps1 | iex`,
+  },
+  {
+    label: "brew",
+    code: `$ brew install --cask claude-code`,
+  },
+  {
+    label: "npm",
+    code: `$ npm install -g @anthropic-ai/claude-code`,
   },
 ]
 
@@ -30,24 +34,6 @@ const logLines = [
   { ok: true,  msg: "balance deducted: 3,891",         time: "0.00s" },
 ]
 
-function CodeLine({ line }: { line: string }) {
-  const highlight = (text: string, term: string, className: string) => {
-    const parts = text.split(term)
-    if (parts.length === 1) return null
-    return (
-      <div>
-        {parts.map((p, i) => (
-          <span key={i}>{p}{i < parts.length - 1 && <span className={className}>{term}</span>}</span>
-        ))}
-      </div>
-    )
-  }
-  return (
-    highlight(line, "sk-proxy-xxxxxxxxxxxx", "text-primary") ||
-    highlight(line, "--bare", "text-primary") ||
-    <div>{line}</div>
-  )
-}
 
 export default function HomePage() {
   const { user, isLoading } = useAuth()
@@ -101,7 +87,8 @@ export default function HomePage() {
 
         {/* Code block */}
         <section className="border-b border-border px-16 py-16">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-8">usage</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">install claude code</p>
+          <p className="text-muted-foreground text-sm mb-8">That&apos;s the only tool you need. Install it once, point it at this proxy, and you&apos;re done.</p>
           <div className="border border-border">
             <div className="flex border-b border-border">
               {tabs.map((t, i) => (
@@ -118,10 +105,8 @@ export default function HomePage() {
                 </button>
               ))}
             </div>
-            <div className="px-6 py-5 text-sm text-muted-foreground leading-7 whitespace-pre">
-              {tabs[activeTab].code.split("\n").map((line, i) => (
-                <CodeLine key={i} line={line} />
-              ))}
+            <div className="px-6 py-5 text-sm text-muted-foreground font-mono">
+              {tabs[activeTab].code}
             </div>
           </div>
         </section>
