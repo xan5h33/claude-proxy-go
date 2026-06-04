@@ -62,7 +62,7 @@ export default function HomePage() {
       <div className="flex-1 flex flex-col mx-auto w-full max-w-5xl border-l border-r border-border">
 
         {/* Nav */}
-        <nav className="border-b border-border px-8 py-5 flex items-center justify-between">
+        <nav className="border-b border-border px-16 py-5 flex items-center justify-between">
           <Link href="/" className="text-primary text-base font-bold tracking-tight hover:opacity-80 transition-opacity">
             proxy
           </Link>
@@ -72,7 +72,7 @@ export default function HomePage() {
         </nav>
 
         {/* Hero */}
-        <section className="border-b border-border px-8 pt-20 pb-20">
+        <section className="border-b border-border px-16 pt-20 pb-20">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 border border-border px-3 py-1 text-xs text-muted-foreground mb-10">
             <span className="text-primary font-bold">new</span>
@@ -99,7 +99,7 @@ export default function HomePage() {
         </section>
 
         {/* Code block */}
-        <section className="border-b border-border px-8 py-16">
+        <section className="border-b border-border px-16 py-16">
           <p className="text-xs text-muted-foreground uppercase tracking-widest mb-8">usage</p>
           <div className="border border-border">
             <div className="flex border-b border-border">
@@ -126,7 +126,7 @@ export default function HomePage() {
         </section>
 
         {/* Features */}
-        <section className="border-b border-border px-8 py-16">
+        <section className="border-b border-border px-16 py-16">
           <p className="text-xs text-muted-foreground uppercase tracking-widest mb-10">how it works</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 border border-border">
             {[
@@ -152,7 +152,7 @@ export default function HomePage() {
         </section>
 
         {/* Terminal log */}
-        <section className="border-b border-border px-8 py-16">
+        <section className="border-b border-border px-16 py-16">
           <p className="text-xs text-muted-foreground uppercase tracking-widest mb-8">live routing</p>
           <div className="border border-border px-6 py-2">
             {logLines.map((l, i) => (
@@ -168,7 +168,7 @@ export default function HomePage() {
         </section>
 
         {/* Footer */}
-        <footer className="px-8 py-5 text-xs text-muted-foreground">
+        <footer className="px-16 py-5 text-xs text-muted-foreground">
           proxy — powered by claude
         </footer>
 
