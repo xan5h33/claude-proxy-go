@@ -35,28 +35,24 @@ const pricing = [
 
 const faqs = [
   {
-    q: "Do I need my own Claude subscription?",
-    a: "No. That's the point. Buy token credits here and use Claude Code without an Anthropic subscription.",
+    q: "Is this against Anthropic's terms of service?",
+    a: "Sharing account credentials violates Anthropic's ToS. Using this proxy means your requests go through someone else's account. That's a risk providers take knowingly. Users should be aware of this too.",
   },
   {
-    q: "How does the proxy work?",
-    a: "You set two environment variables — your proxy API key and the proxy base URL. Claude Code thinks it's talking to Anthropic directly, but requests route through pooled accounts.",
+    q: "Why would anyone share their account?",
+    a: "Claude Pro costs $20/month but most people only use it a few hours a day. The rest of the quota resets unused. Providers earn from time they're asleep or away from their desk.",
   },
   {
-    q: "How do I earn from my unused quota?",
-    a: "Register your Claude account as a provider. When you're not using it, others route through it and your quota gets used instead of wasted. Earnings are tracked in your dashboard.",
+    q: "What stops someone from burning through my quota?",
+    a: "Providers can set daily token caps and availability windows — e.g. only share quota between midnight and 8am in your timezone. You stay in control.",
   },
   {
-    q: "What happens when my balance runs out?",
-    a: "Requests return a 402 error. Top up anytime from your dashboard to continue.",
+    q: "How long do my credits last?",
+    a: "They don't expire. Top up $2, use it over a week or a month — doesn't matter.",
   },
   {
-    q: "Is my code or data stored?",
-    a: "No. We count tokens in and out for billing purposes, but request content is never logged or stored.",
-  },
-  {
-    q: "Can I use this with Claude Code --bare?",
-    a: "Yes, that's exactly how it's designed to be used. The --bare flag disables the subscription check.",
+    q: "What if all providers are busy or rate-limited?",
+    a: "The proxy automatically switches to the next available provider. If none are available, the request fails. This is a best-effort pool, not a guaranteed SLA.",
   },
 ]
 
