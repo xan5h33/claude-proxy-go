@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth"
 import { dashboard, UsageLog } from "@/lib/api"
 import { AppShell } from "@/components/app-shell"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 
 export default function UsagePage() {
   const { user, isLoading } = useAuth()
@@ -32,48 +30,39 @@ export default function UsagePage() {
     <AppShell>
       {isLoading || !user
         ? <div className="p-6 text-sm text-muted-foreground">Loading...</div>
-        : <div className="max-w-3xl mx-auto">
-        {/* Summary */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-4 text-center">
-              <p className="text-2xl font-bold">{logs.length}</p>
-              <p className="text-xs text-muted-foreground">Requests</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 text-center">
-              <p className="text-2xl font-bold">{totalInput.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">Input tokens</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4 text-center">
-              <p className="text-2xl font-bold">{totalOutput.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground">Output tokens</p>
-            </CardContent>
-          </Card>
-        </div>
+        : <div className="max-w-3xl mx-auto border border-border divide-y divide-border">
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Request Log</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">Loading...</p>
-            ) : logs.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No requests yet.</p>
-            ) : (
-              <div className="divide-y">
-                {logs.map((log) => (
-                  <LogRow key={log.id} log={log} />
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>}
+            {/* Summary */}
+            <div className="grid grid-cols-3 divide-x divide-border">
+              {[
+                { label: "requests",     value: logs.length },
+                { label: "input tokens", value: totalInput },
+                { label: "output tokens",value: totalOutput },
+              ].map((s) => (
+                <div key={s.label} className="px-6 py-5 text-center">
+                  <p className="text-2xl font-bold">{s.value.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Log */}
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-muted-foreground uppercase tracking-widest">request log</p>
+              {loading ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">Loading...</p>
+              ) : logs.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">No requests yet.</p>
+              ) : (
+                <div className="border border-border divide-y divide-border">
+                  {logs.map((log) => (
+                    <LogRow key={log.id} log={log} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+      }
     </AppShell>
   )
 }
@@ -83,21 +72,17 @@ function LogRow({ log }: { log: UsageLog }) {
   const date = new Date(log.created_at)
 
   return (
-    <div className="flex items-center justify-between py-2.5 text-sm">
-      <div>
-        <p className="text-xs text-muted-foreground">
+    <div className="flex items-center justify-between px-4 py-3 text-xs">
+      <div className="space-y-0.5">
+        <p className="text-muted-foreground">
           {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </p>
-        <p className="text-xs font-mono text-muted-foreground/60 truncate max-w-[180px]">{log.provider_id}</p>
+        <p className="text-muted-foreground/50 font-mono truncate max-w-[200px]">{log.provider_id}</p>
       </div>
-      <div className="flex items-center gap-2 text-right">
-        <Badge variant="outline" className="text-xs font-mono">
-          {log.input_tokens.toLocaleString()} in
-        </Badge>
-        <Badge variant="outline" className="text-xs font-mono">
-          {log.output_tokens.toLocaleString()} out
-        </Badge>
-        <span className="text-xs font-medium w-20 text-right">{total.toLocaleString()} total</span>
+      <div className="flex items-center gap-4 text-right">
+        <span className="text-muted-foreground">{log.input_tokens.toLocaleString()} in</span>
+        <span className="text-muted-foreground">{log.output_tokens.toLocaleString()} out</span>
+        <span className="text-foreground font-medium w-24 text-right">{total.toLocaleString()} total</span>
       </div>
     </div>
   )

@@ -6,8 +6,6 @@ import { useAuth } from "@/contexts/auth"
 import { dashboard } from "@/lib/api"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 
 export default function DashboardPage() {
   const { user, isLoading, setAuth } = useAuth()
@@ -21,7 +19,7 @@ export default function DashboardPage() {
     <AppShell>
       {isLoading || !user
         ? <div className="p-6 text-sm text-muted-foreground">Loading...</div>
-        : <div className="max-w-2xl mx-auto grid gap-6">
+        : <div className="max-w-2xl mx-auto space-y-0 border border-border divide-y divide-border">
             <UsageCard user={user} />
             <APIKeyCard user={user} onRotate={(u) => setAuth(localStorage.getItem("token")!, u)} />
           </div>
@@ -35,32 +33,25 @@ function UsageCard({ user }: { user: { balance?: number; total_input_tokens: num
   const empty = (user.balance ?? 0) <= 0
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">Balance & Usage</CardTitle>
-          {empty && <Badge variant="destructive">No Balance</Badge>}
+    <div className="p-6 space-y-4">
+      <p className="text-xs text-muted-foreground uppercase tracking-widest">balance & usage</p>
+      <div className="grid grid-cols-2 gap-0 border border-border divide-x divide-border">
+        <div className="px-6 py-5 text-center">
+          <p className={`text-3xl font-bold ${empty ? "text-destructive" : "text-primary"}`}>
+            {(user.balance ?? 0).toLocaleString()}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">tokens remaining</p>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4 text-center mb-4">
-          <div className="p-3 bg-muted/40 rounded-lg">
-            <p className={`text-3xl font-bold ${empty ? "text-red-500" : "text-primary"}`}>
-              {(user.balance ?? 0).toLocaleString()}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">Tokens remaining</p>
-          </div>
-          <div className="p-3 bg-muted/40 rounded-lg">
-            <p className="text-3xl font-bold">{total.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground mt-1">Tokens used</p>
-          </div>
+        <div className="px-6 py-5 text-center">
+          <p className="text-3xl font-bold">{total.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground mt-1">tokens used</p>
         </div>
-        <div className="grid grid-cols-2 gap-4 text-center text-sm text-muted-foreground">
-          <div>{user.total_input_tokens.toLocaleString()} input</div>
-          <div>{user.total_output_tokens.toLocaleString()} output</div>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+      <div className="grid grid-cols-2 gap-4 text-center text-xs text-muted-foreground">
+        <div>{user.total_input_tokens.toLocaleString()} input</div>
+        <div>{user.total_output_tokens.toLocaleString()} output</div>
+      </div>
+    </div>
   )
 }
 
@@ -112,57 +103,49 @@ function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Proxy API Key</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {newKey && (
-          <p className="text-xs font-medium text-primary">New key generated — copy it now.</p>
-        )}
+    <div className="p-6 space-y-5">
+      <p className="text-xs text-muted-foreground uppercase tracking-widest">proxy api key</p>
 
-        {/* Key */}
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">your key</p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 text-xs bg-muted px-3 py-2 font-mono break-all">{key}</code>
-            <Button variant="outline" size="sm" onClick={handleCopyKey} className="shrink-0">
-              {copiedKey ? "Copied!" : "Copy"}
+      {newKey && <p className="text-xs text-primary">New key generated — copy it now.</p>}
+
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground">your key</p>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 text-xs bg-muted px-3 py-2 font-mono break-all border border-border">{key}</code>
+          <Button variant="outline" size="sm" onClick={handleCopyKey} className="shrink-0 text-xs">
+            {copiedKey ? "Copied!" : "Copy"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground">run claude code with this proxy</p>
+        <div className="border border-border">
+          <div className="flex border-b border-border">
+            {cmds.map((c, i) => (
+              <button
+                key={c.label}
+                onClick={() => setActiveTab(i)}
+                className={`px-4 py-2.5 text-xs transition-colors ${
+                  activeTab === i ? "text-foreground border-b border-primary -mb-px" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-start gap-2 px-4 py-4">
+            <code className="flex-1 text-xs text-muted-foreground font-mono break-all leading-relaxed">{cmds[activeTab].value}</code>
+            <Button variant="outline" size="sm" onClick={handleCopyCmd} className="shrink-0 text-xs">
+              {copiedCmd ? "Copied!" : "Copy"}
             </Button>
           </div>
         </div>
+      </div>
 
-        {/* Usage command */}
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">run claude code with this proxy</p>
-          <div className="border border-border">
-            <div className="flex border-b border-border">
-              {cmds.map((c, i) => (
-                <button
-                  key={c.label}
-                  onClick={() => setActiveTab(i)}
-                  className={`px-4 py-2 text-xs transition-colors ${
-                    activeTab === i ? "text-foreground border-b border-primary -mb-px" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-start gap-2 px-4 py-3">
-              <code className="flex-1 text-xs text-muted-foreground font-mono break-all leading-relaxed">{cmds[activeTab].value}</code>
-              <Button variant="outline" size="sm" onClick={handleCopyCmd} className="shrink-0 mt-0.5">
-                {copiedCmd ? "Copied!" : "Copy"}
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <Button variant="outline" size="sm" onClick={handleRotate} disabled={rotating}>
-          {rotating ? "Rotating..." : "Rotate Key"}
-        </Button>
-      </CardContent>
-    </Card>
+      <Button variant="outline" size="sm" onClick={handleRotate} disabled={rotating} className="text-xs">
+        {rotating ? "Rotating..." : "Rotate Key"}
+      </Button>
+    </div>
   )
 }
-
