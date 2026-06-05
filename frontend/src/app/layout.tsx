@@ -14,6 +14,16 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "ladle",
   description: "Share your Claude quota, earn while you sleep.",
+  openGraph: {
+    title: "ladle",
+    description: "Share your Claude quota, earn while you sleep.",
+    siteName: "ladle",
+  },
+  twitter: {
+    card: "summary",
+    title: "ladle",
+    description: "Share your Claude quota, earn while you sleep.",
+  },
 };
 
 export default function RootLayout({
