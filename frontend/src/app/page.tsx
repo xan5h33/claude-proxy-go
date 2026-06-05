@@ -72,9 +72,9 @@ export default function HomePage() {
       <div className="flex-1 flex flex-col mx-auto w-full max-w-5xl border-l border-r border-border">
 
         {/* Nav — sticky */}
-        <nav className="sticky top-0 z-50 border-b border-border bg-background px-16 py-4 flex items-center justify-between">
+        <nav className="sticky top-0 z-50 border-b border-border bg-background px-16 py-7 flex items-center justify-between">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <Wordmark className="text-2xl" />
+            <Wordmark className="text-3xl" />
           </Link>
           {ready && (
             <Link href={dashHref} className="text-base text-muted-foreground hover:text-foreground transition-colors">
