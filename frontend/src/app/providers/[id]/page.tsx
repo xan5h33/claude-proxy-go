@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { api, Provider, ProviderSettings } from "@/lib/api"
 import { AppShell } from "@/components/app-shell"
+import { Spinner } from "@/components/spinner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -89,7 +90,7 @@ export default function ProviderDetailPage() {
     }
   }
 
-  if (loading) return <div className="p-8">Loading...</div>
+  if (loading) return <AppShell><Spinner className="min-h-64" /></AppShell>
   if (error) return <div className="p-8 text-red-500">{error}</div>
   if (!provider) return null
 

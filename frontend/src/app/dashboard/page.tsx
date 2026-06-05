@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth"
 import { dashboard } from "@/lib/api"
 import { AppShell } from "@/components/app-shell"
+import { Spinner } from "@/components/spinner"
 import { Button } from "@/components/ui/button"
 
 export default function DashboardPage() {
@@ -18,7 +19,7 @@ export default function DashboardPage() {
   return (
     <AppShell>
       {isLoading || !user
-        ? <div className="p-6 text-sm text-muted-foreground">Loading...</div>
+        ? <Spinner className="min-h-64" />
         : <div className="max-w-2xl mx-auto border border-border divide-y divide-border">
             <UsageCard user={user} />
             <APIKeyCard user={user} onRotate={(u) => setAuth(localStorage.getItem("token")!, u)} />

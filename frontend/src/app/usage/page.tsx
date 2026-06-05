@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth"
 import { dashboard, UsageLog } from "@/lib/api"
 import { AppShell } from "@/components/app-shell"
+import { Spinner } from "@/components/spinner"
 
 export default function UsagePage() {
   const { user, isLoading } = useAuth()
@@ -29,7 +30,7 @@ export default function UsagePage() {
   return (
     <AppShell>
       {isLoading || !user
-        ? <div className="p-6 text-sm text-muted-foreground">Loading...</div>
+        ? <Spinner className="min-h-64" />
         : <div className="max-w-3xl mx-auto border border-border divide-y divide-border">
 
             {/* Summary */}
@@ -50,7 +51,7 @@ export default function UsagePage() {
             <div className="p-8 space-y-5">
               <p className="text-sm text-muted-foreground uppercase tracking-widest">request log</p>
               {loading ? (
-                <p className="text-base text-muted-foreground py-6 text-center">Loading...</p>
+                <Spinner className="py-6" />
               ) : logs.length === 0 ? (
                 <p className="text-base text-muted-foreground py-6 text-center">No requests yet.</p>
               ) : (

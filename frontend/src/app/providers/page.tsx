@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { api, Provider } from "@/lib/api"
 import { AppShell } from "@/components/app-shell"
+import { Spinner } from "@/components/spinner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -28,7 +29,7 @@ export default function ProvidersPage() {
   return (
     <AppShell>
       {loading
-        ? <div className="p-6 text-sm text-muted-foreground">Loading...</div>
+        ? <Spinner className="min-h-64" />
         : error
           ? <div className="p-6 text-sm text-destructive">{error}</div>
           : <div className="max-w-4xl mx-auto">
