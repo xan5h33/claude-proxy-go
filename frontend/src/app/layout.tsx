@@ -14,6 +14,10 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "ladle",
   description: "Share your Claude quota, earn while you sleep.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+  },
   openGraph: {
     title: "ladle",
     description: "Share your Claude quota, earn while you sleep.",

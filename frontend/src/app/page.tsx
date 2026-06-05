@@ -222,23 +222,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Footer links grid */}
-        <div className="grid grid-cols-3 divide-x divide-border border-b border-border">
-          {[
-            { label: "GitHub", href: "https://github.com/xan5h33/claude-proxy-go" },
-            { label: "Dashboard", href: "/dashboard" },
-            { label: "Register", href: "/register" },
-          ].map((l) => (
-            <Link
-              key={l.label}
-              href={l.href}
-              className="px-8 py-5 text-sm text-muted-foreground hover:text-foreground transition-colors text-center"
-            >
-              {l.label}
-            </Link>
-          ))}
-        </div>
-
         {/* Footer copyright */}
         <footer className="px-16 py-5 flex items-center justify-between text-xs text-muted-foreground">
           <span>©2026 ladle</span>
