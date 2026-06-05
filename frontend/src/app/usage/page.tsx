@@ -39,20 +39,20 @@ export default function UsagePage() {
                 { label: "input tokens", value: totalInput },
                 { label: "output tokens",value: totalOutput },
               ].map((s) => (
-                <div key={s.label} className="px-6 py-5 text-center">
-                  <p className="text-2xl font-bold">{s.value.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+                <div key={s.label} className="px-8 py-7 text-center">
+                  <p className="text-3xl font-bold">{s.value.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground mt-2">{s.label}</p>
                 </div>
               ))}
             </div>
 
             {/* Log */}
-            <div className="p-6 space-y-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest">request log</p>
+            <div className="p-8 space-y-5">
+              <p className="text-sm text-muted-foreground uppercase tracking-widest">request log</p>
               {loading ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">Loading...</p>
+                <p className="text-base text-muted-foreground py-6 text-center">Loading...</p>
               ) : logs.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">No requests yet.</p>
+                <p className="text-base text-muted-foreground py-6 text-center">No requests yet.</p>
               ) : (
                 <div className="border border-border divide-y divide-border">
                   {logs.map((log) => (
@@ -72,17 +72,17 @@ function LogRow({ log }: { log: UsageLog }) {
   const date = new Date(log.created_at)
 
   return (
-    <div className="flex items-center justify-between px-4 py-3 text-xs">
-      <div className="space-y-0.5">
+    <div className="flex items-center justify-between px-5 py-4 text-sm">
+      <div className="space-y-1">
         <p className="text-muted-foreground">
           {date.toLocaleDateString()} {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </p>
-        <p className="text-muted-foreground/50 font-mono truncate max-w-[200px]">{log.provider_id}</p>
+        <p className="text-muted-foreground/50 font-mono truncate max-w-[200px] text-xs">{log.provider_id}</p>
       </div>
-      <div className="flex items-center gap-4 text-right">
+      <div className="flex items-center gap-5 text-right">
         <span className="text-muted-foreground">{log.input_tokens.toLocaleString()} in</span>
         <span className="text-muted-foreground">{log.output_tokens.toLocaleString()} out</span>
-        <span className="text-foreground font-medium w-24 text-right">{total.toLocaleString()} total</span>
+        <span className="text-foreground font-medium w-28 text-right">{total.toLocaleString()} total</span>
       </div>
     </div>
   )

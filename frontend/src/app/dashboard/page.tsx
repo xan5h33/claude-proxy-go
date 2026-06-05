@@ -19,7 +19,7 @@ export default function DashboardPage() {
     <AppShell>
       {isLoading || !user
         ? <div className="p-6 text-sm text-muted-foreground">Loading...</div>
-        : <div className="max-w-2xl mx-auto space-y-0 border border-border divide-y divide-border">
+        : <div className="max-w-2xl mx-auto border border-border divide-y divide-border">
             <UsageCard user={user} />
             <APIKeyCard user={user} onRotate={(u) => setAuth(localStorage.getItem("token")!, u)} />
           </div>
@@ -33,18 +33,18 @@ function UsageCard({ user }: { user: { balance?: number; total_input_tokens: num
   const empty = (user.balance ?? 0) <= 0
 
   return (
-    <div className="p-6 space-y-4">
-      <p className="text-xs text-muted-foreground uppercase tracking-widest">balance & usage</p>
+    <div className="p-8 space-y-5">
+      <p className="text-sm text-muted-foreground uppercase tracking-widest">balance & usage</p>
       <div className="grid grid-cols-2 gap-0 border border-border divide-x divide-border">
-        <div className="px-6 py-5 text-center">
-          <p className={`text-3xl font-bold ${empty ? "text-destructive" : "text-primary"}`}>
+        <div className="px-8 py-6 text-center">
+          <p className={`text-4xl font-bold ${empty ? "text-destructive" : "text-primary"}`}>
             {(user.balance ?? 0).toLocaleString()}
           </p>
-          <p className="text-sm text-muted-foreground mt-1">tokens remaining</p>
+          <p className="text-base text-muted-foreground mt-2">tokens remaining</p>
         </div>
-        <div className="px-6 py-5 text-center">
-          <p className="text-3xl font-bold">{total.toLocaleString()}</p>
-          <p className="text-sm text-muted-foreground mt-1">tokens used</p>
+        <div className="px-8 py-6 text-center">
+          <p className="text-4xl font-bold">{total.toLocaleString()}</p>
+          <p className="text-base text-muted-foreground mt-2">tokens used</p>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-4 text-center text-sm text-muted-foreground">
@@ -103,30 +103,30 @@ function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (
   }
 
   return (
-    <div className="p-6 space-y-5">
-      <p className="text-xs text-muted-foreground uppercase tracking-widest">proxy api key</p>
+    <div className="p-8 space-y-6">
+      <p className="text-sm text-muted-foreground uppercase tracking-widest">proxy api key</p>
 
-      {newKey && <p className="text-sm text-primary">New key generated — copy it now.</p>}
+      {newKey && <p className="text-base text-primary">New key generated — copy it now.</p>}
 
-      <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">your key</p>
-        <div className="flex items-center gap-2">
-          <code className="flex-1 text-sm bg-muted px-3 py-2.5 font-mono break-all border border-border">{key}</code>
-          <Button variant="outline" size="sm" onClick={handleCopyKey} className="shrink-0">
+      <div className="space-y-3">
+        <p className="text-base text-muted-foreground">your key</p>
+        <div className="flex items-center gap-3">
+          <code className="flex-1 text-sm bg-muted px-4 py-3 font-mono break-all border border-border">{key}</code>
+          <Button variant="outline" size="sm" onClick={handleCopyKey} className="shrink-0 h-9 px-4 text-sm">
             {copiedKey ? "Copied!" : "Copy"}
           </Button>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <p className="text-sm text-muted-foreground">run claude code with this proxy</p>
+      <div className="space-y-3">
+        <p className="text-base text-muted-foreground">run claude code with this proxy</p>
         <div className="border border-border">
           <div className="flex border-b border-border">
             {cmds.map((c, i) => (
               <button
                 key={c.label}
                 onClick={() => setActiveTab(i)}
-                className={`px-4 py-3 text-sm transition-colors ${
+                className={`px-5 py-3 text-sm transition-colors ${
                   activeTab === i ? "text-foreground border-b border-primary -mb-px" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -134,16 +134,16 @@ function APIKeyCard({ user, onRotate }: { user: { api_key: string }; onRotate: (
               </button>
             ))}
           </div>
-          <div className="flex items-start gap-2 px-4 py-4">
+          <div className="flex items-start gap-3 px-5 py-5">
             <code className="flex-1 text-sm text-muted-foreground font-mono break-all leading-relaxed">{cmds[activeTab].value}</code>
-            <Button variant="outline" size="sm" onClick={handleCopyCmd} className="shrink-0">
+            <Button variant="outline" size="sm" onClick={handleCopyCmd} className="shrink-0 h-9 px-4 text-sm">
               {copiedCmd ? "Copied!" : "Copy"}
             </Button>
           </div>
         </div>
       </div>
 
-      <Button variant="outline" size="sm" onClick={handleRotate} disabled={rotating}>
+      <Button variant="outline" size="sm" onClick={handleRotate} disabled={rotating} className="h-9 px-5 text-sm">
         {rotating ? "Rotating..." : "Rotate Key"}
       </Button>
     </div>

@@ -8,12 +8,7 @@ import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
@@ -39,73 +34,75 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <Sidebar className="border-r">
-        <SidebarHeader className="px-4 py-4">
+        <SidebarHeader className="px-5 py-5 border-b border-border">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <Wordmark className="text-lg" />
+            <Wordmark className="text-2xl" />
           </Link>
         </SidebarHeader>
 
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarMenu>
-              {userNav.map(({ href, label, icon: Icon }) => (
-                <SidebarMenuItem key={href}>
-                  <SidebarMenuButton
-                    render={<Link href={href} />}
-                    isActive={pathname === href}
-                  >
-                    <Icon className="size-4" />
-                    <span>{label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroup>
+        <SidebarContent className="px-3 py-4">
+          <nav className="flex flex-col gap-1">
+            {userNav.map(({ href, label, icon: Icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-base transition-colors ${
+                  pathname === href
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                    : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                }`}
+              >
+                <Icon className="size-5 shrink-0" />
+                <span>{label}</span>
+              </Link>
+            ))}
+          </nav>
 
           {isAdmin && (
-            <SidebarGroup>
-              <SidebarGroupLabel>Admin</SidebarGroupLabel>
-              <SidebarMenu>
+            <div className="mt-6">
+              <p className="px-4 text-xs text-muted-foreground uppercase tracking-widest mb-2">Admin</p>
+              <nav className="flex flex-col gap-1">
                 {adminNav.map(({ href, label, icon: Icon }) => (
-                  <SidebarMenuItem key={href}>
-                    <SidebarMenuButton
-                      render={<Link href={href} />}
-                      isActive={pathname === href || pathname.startsWith(href + "/")}
-                    >
-                      <Icon className="size-4" />
-                      <span>{label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`flex items-center gap-3 rounded-lg px-4 py-3 text-base transition-colors ${
+                      pathname === href || pathname.startsWith(href + "/")
+                        ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    }`}
+                  >
+                    <Icon className="size-5 shrink-0" />
+                    <span>{label}</span>
+                  </Link>
                 ))}
-              </SidebarMenu>
-            </SidebarGroup>
+              </nav>
+            </div>
           )}
         </SidebarContent>
 
-        <SidebarFooter className="px-4 py-3">
-          <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+        <SidebarFooter className="px-5 py-4 border-t border-border">
+          <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
         </SidebarFooter>
       </Sidebar>
 
       <div className="flex flex-col flex-1 min-h-screen min-w-0">
         {/* Header */}
-        <header className="sticky top-0 z-10 flex h-12 items-center gap-3 border-b border-border bg-background/95 backdrop-blur-sm px-4">
-          <SidebarTrigger className="-ml-1" />
+        <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-border bg-background/95 backdrop-blur-sm px-6">
+          <SidebarTrigger className="size-5" />
           <div className="flex-1" />
-          <span className="text-xs text-muted-foreground hidden sm:block">{user?.email}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs gap-1.5"
+          <span className="text-base text-muted-foreground hidden sm:block">{user?.email}</span>
+          <button
+            className="flex items-center gap-2 text-base text-muted-foreground hover:text-foreground transition-colors px-3 py-2"
             onClick={() => { logout(); router.push("/login") }}
           >
-            <LogOut className="size-3" />
+            <LogOut className="size-4" />
             Sign out
-          </Button>
+          </button>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-8">
           {children}
         </main>
       </div>
