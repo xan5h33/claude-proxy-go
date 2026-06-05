@@ -34,7 +34,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <Sidebar className="border-r">
-        <SidebarHeader className="px-5 py-5 border-b border-border">
+        <SidebarHeader className="h-16 flex-row items-center px-5 border-b border-border">
           <Link href="/" className="hover:opacity-80 transition-opacity">
             <Wordmark className="text-2xl" />
           </Link>
@@ -46,13 +46,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-base transition-colors ${
+                className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                   pathname === href
                     ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                     : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 }`}
               >
-                <Icon className="size-5 shrink-0" />
+                <Icon className="size-4 shrink-0" />
                 <span>{label}</span>
               </Link>
             ))}
@@ -66,13 +66,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <Link
                     key={href}
                     href={href}
-                    className={`flex items-center gap-3 rounded-lg px-4 py-3 text-base transition-colors ${
+                    className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                       pathname === href || pathname.startsWith(href + "/")
                         ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
                         : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                     }`}
                   >
-                    <Icon className="size-5 shrink-0" />
+                    <Icon className="size-4 shrink-0" />
                     <span>{label}</span>
                   </Link>
                 ))}
