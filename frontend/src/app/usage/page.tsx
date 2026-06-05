@@ -40,20 +40,20 @@ export default function UsagePage() {
                 { label: "input tokens", value: totalInput },
                 { label: "output tokens",value: totalOutput },
               ].map((s) => (
-                <div key={s.label} className="px-8 py-7 text-center">
-                  <p className="text-3xl font-bold">{s.value.toLocaleString()}</p>
-                  <p className="text-sm text-muted-foreground mt-2">{s.label}</p>
+                <div key={s.label} className="px-6 py-5 text-center">
+                  <p className="text-xl font-bold">{s.value.toLocaleString()}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{s.label}</p>
                 </div>
               ))}
             </div>
 
             {/* Log */}
-            <div className="p-8 space-y-5">
+            <div className="p-6 space-y-4">
               <p className="text-sm text-muted-foreground uppercase tracking-widest">request log</p>
               {loading ? (
                 <Spinner className="py-6" />
               ) : logs.length === 0 ? (
-                <p className="text-base text-muted-foreground py-6 text-center">No requests yet.</p>
+                <p className="text-sm text-muted-foreground py-6 text-center">No requests yet.</p>
               ) : (
                 <div className="border border-border divide-y divide-border">
                   {logs.map((log) => (

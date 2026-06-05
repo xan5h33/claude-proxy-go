@@ -47,7 +47,7 @@ export default function UsersPage() {
           ? <div className="p-6 text-sm text-destructive">{error}</div>
           : <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <p className="text-muted-foreground">{users.length} users</p>
+          <p className="text-sm text-muted-foreground">{users.length} users</p>
           <Button onClick={handleCreate} disabled={creating}>
             {creating ? "Creating..." : "Create API Key"}
           </Button>
@@ -95,7 +95,7 @@ function UserCard({ user, onDelete }: { user: User; onDelete: () => void }) {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle
-            className="text-sm font-mono hover:underline cursor-pointer"
+            className="text-base font-mono hover:underline cursor-pointer"
             onClick={() => router.push(`/users/${user.id}`)}
           >
             {user.email || user.api_key}

@@ -50,20 +50,20 @@ export default function MyProvidersPage() {
             Register a new machine as a provider by running the script below.
           </p>
           <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-md">
-            <span className="text-amber-600 dark:text-amber-400 text-xs font-medium shrink-0">Before you run:</span>
-            <p className="text-xs text-amber-700 dark:text-amber-300">
+            <span className="text-amber-600 dark:text-amber-400 text-sm font-medium shrink-0">Before you run:</span>
+            <p className="text-sm text-amber-700 dark:text-amber-300">
               Make sure you&apos;re logged into Claude Code on that machine first — run <code className="font-mono bg-amber-100 dark:bg-amber-900 px-1 rounded">claude login</code> if you haven&apos;t already.
             </p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">macOS / Linux</p>
-            <div className="font-mono text-xs bg-background border rounded px-3 py-2 break-all select-all">
+            <p className="text-sm text-muted-foreground">macOS / Linux</p>
+            <div className="font-mono text-sm bg-background border rounded px-3 py-2 break-all select-all">
               ./register.sh {user.api_key}
             </div>
           </div>
           <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Windows (PowerShell)</p>
-            <div className="font-mono text-xs bg-background border rounded px-3 py-2 break-all select-all">
+            <p className="text-sm text-muted-foreground">Windows (PowerShell)</p>
+            <div className="font-mono text-sm bg-background border rounded px-3 py-2 break-all select-all">
               .\register.ps1 {user.api_key}
             </div>
           </div>
@@ -175,33 +175,33 @@ function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: ()
         <div className="grid grid-cols-3 gap-3 text-center">
           <div className="p-2 bg-muted/40 rounded-lg">
             <p className="text-xl font-bold">{provider.total_input_tokens.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">Input served</p>
+            <p className="text-sm text-muted-foreground">Input served</p>
           </div>
           <div className="p-2 bg-muted/40 rounded-lg">
             <p className="text-xl font-bold">{provider.total_output_tokens.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">Output served</p>
+            <p className="text-sm text-muted-foreground">Output served</p>
           </div>
           <div className="p-2 bg-muted/40 rounded-lg">
             <p className="text-xl font-bold">{total.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">Total served</p>
+            <p className="text-sm text-muted-foreground">Total served</p>
           </div>
         </div>
 
         {/* Availability window */}
         <div className="space-y-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Availability Window</p>
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Availability Window</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs">Start hour (0–23)</Label>
+              <Label className="text-sm">Start hour (0–23)</Label>
               <Input type="number" min="0" max="23" placeholder="always on" value={startHour} onChange={(e) => setStartHour(e.target.value)} className="h-8 text-sm" />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">End hour (0–23)</Label>
+              <Label className="text-sm">End hour (0–23)</Label>
               <Input type="number" min="0" max="23" placeholder="always on" value={endHour} onChange={(e) => setEndHour(e.target.value)} className="h-8 text-sm" />
             </div>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Timezone</Label>
+            <Label className="text-sm">Timezone</Label>
             <select
               className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm"
               value={timezone}
@@ -211,7 +211,7 @@ function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: ()
             </select>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs">Daily cap (tokens, 0 = unlimited)</Label>
+            <Label className="text-sm">Daily cap (tokens, 0 = unlimited)</Label>
             <Input type="number" min="0" placeholder="0" value={cap} onChange={(e) => setCap(e.target.value)} className="h-8 text-sm" />
           </div>
           <div className="flex items-center gap-3">

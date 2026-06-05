@@ -33,7 +33,7 @@ export default function ProvidersPage() {
         : error
           ? <div className="p-6 text-sm text-destructive">{error}</div>
           : <div className="max-w-4xl mx-auto">
-        <p className="text-muted-foreground mb-6">{providers.length} registered</p>
+        <p className="text-sm text-muted-foreground mb-6">{providers.length} registered</p>
 
         <div className="grid gap-4">
           {providers.length === 0 && (
@@ -79,7 +79,7 @@ function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: ()
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle
-            className="text-sm hover:underline cursor-pointer"
+            className="text-base hover:underline cursor-pointer"
             onClick={() => router.push(`/providers/${provider.id}`)}
           >
             {provider.name}
@@ -94,7 +94,7 @@ function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: ()
             </Badge>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">Window: {windowLabel}</p>
+        <p className="text-sm text-muted-foreground">Window: {windowLabel}</p>
       </CardHeader>
       <CardContent>
         <div className="flex gap-2">
