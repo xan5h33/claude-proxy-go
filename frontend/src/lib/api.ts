@@ -162,6 +162,11 @@ export const me = {
 // JWT-based self-service (uses stored token instead of passed key)
 export const dashboard = {
   getMe: () => request<User>("/user/me"),
+  createCheckout: (tier: string) =>
+    request<{ url: string }>("/user/me/checkout", {
+      method: "POST",
+      body: JSON.stringify({ tier }),
+    }),
   rotateKey: () => request<User>("/user/me/rotate-key", { method: "POST" }),
   listProviders: () => request<Provider[]>("/user/me/providers"),
   registerProvider: (data: {

@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(h *Handler, users *application.UserService, auth *application.AuthService, adminSecret, allowedOrigin string) *gin.Engine {
+func NewRouter(h *Handler, users *application.UserService, auth *application.AuthService, adminSecret, allowedOrigin string, stripeEnabled bool) *gin.Engine {
 	r := gin.Default()
 
 	corsConfig := cors.Config{
@@ -26,6 +26,11 @@ func NewRouter(h *Handler, users *application.UserService, auth *application.Aut
 	r.GET("/health", h.Health)
 	r.GET("/api/hello", h.OAuthHello)
 	r.GET("/v1/oauth/hello", h.OAuthHello)
+
+	// Stripe webhook — no auth, raw body needed
+	if stripeEnabled {
+		r.POST("/webhooks/stripe", h.StripeWebhook)
+	}
 
 	// Public auth
 	r.POST("/auth/register", h.Register)
@@ -51,6 +56,9 @@ func NewRouter(h *Handler, users *application.UserService, auth *application.Aut
 		me.PATCH("/me/providers/:id/tokens", h.UpdateMyProviderTokens)
 		me.PATCH("/me/providers/:id/active", h.SetMyProviderActive)
 		me.PATCH("/me/providers/:id/settings", h.UpdateMyProviderSettings)
+		if stripeEnabled {
+			me.POST("/me/checkout", h.CreateCheckoutSession)
+		}
 	}
 
 	// Admin — JWT (is_admin) or x-admin-secret

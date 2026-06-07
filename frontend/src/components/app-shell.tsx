@@ -13,12 +13,13 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, History, Server, Users, Cpu, LogOut } from "lucide-react"
+import { LayoutDashboard, History, Server, Users, Cpu, LogOut, CreditCard } from "lucide-react"
 
 const userNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/usage", label: "Usage History", icon: History },
   { href: "/my-providers", label: "Providers", icon: Server },
+  { href: "/topup", label: "Top Up", icon: CreditCard },
 ]
 
 const adminNav = [

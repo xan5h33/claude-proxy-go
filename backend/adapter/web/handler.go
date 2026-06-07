@@ -16,14 +16,15 @@ import (
 )
 
 type Handler struct {
-	proxy     *application.ProxyService
+	proxy    *application.ProxyService
 	providers *application.ProviderService
-	users     *application.UserService
-	auth      *application.AuthService
+	users    *application.UserService
+	auth     *application.AuthService
+	payment  *application.PaymentService
 }
 
-func NewHandler(proxy *application.ProxyService, providers *application.ProviderService, users *application.UserService, auth *application.AuthService) *Handler {
-	return &Handler{proxy: proxy, providers: providers, users: users, auth: auth}
+func NewHandler(proxy *application.ProxyService, providers *application.ProviderService, users *application.UserService, auth *application.AuthService, payment *application.PaymentService) *Handler {
+	return &Handler{proxy: proxy, providers: providers, users: users, auth: auth, payment: payment}
 }
 
 // ── Health ────────────────────────────────────────────────────────────────────
@@ -453,6 +454,39 @@ func (h *Handler) UpdateMyProviderSettings(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusNoContent)
+}
+
+// ── Payment ───────────────────────────────────────────────────────────────────
+
+func (h *Handler) CreateCheckoutSession(c *gin.Context) {
+	user := c.MustGet("user").(*application.User)
+	var req struct {
+		Tier string `json:"tier" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	url, err := h.payment.CreateCheckoutSession(c.Request.Context(), user.ID, req.Tier)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"url": url})
+}
+
+func (h *Handler) StripeWebhook(c *gin.Context) {
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read body"})
+		return
+	}
+	sig := c.GetHeader("Stripe-Signature")
+	if err := h.payment.HandleWebhook(c.Request.Context(), body, sig); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusOK)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

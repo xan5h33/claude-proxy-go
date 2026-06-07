@@ -6,13 +6,16 @@ import (
 )
 
 type Config struct {
-	Port              string
-	DatabaseURL       string
-	AdminSecret       string
-	JWTSecret         string
-	AllowedOrigin     string // e.g. https://your-app.vercel.app — empty = allow all
-	InitAdminEmail    string
-	InitAdminPassword string
+	Port                string
+	DatabaseURL         string
+	AdminSecret         string
+	JWTSecret           string
+	AllowedOrigin       string // e.g. https://your-app.vercel.app — empty = allow all
+	InitAdminEmail      string
+	InitAdminPassword   string
+	StripeSecretKey     string
+	StripeWebhookSecret string
+	AppURL              string // e.g. https://your-app.vercel.app
 }
 
 func Load() *Config {
@@ -26,13 +29,16 @@ func Load() *Config {
 		log.Println("warning: JWT_SECRET not set, using default")
 	}
 	return &Config{
-		Port:              getEnv("PORT", "8080"),
-		DatabaseURL:       dbURL,
-		AdminSecret:       os.Getenv("ADMIN_SECRET"),
-		JWTSecret:         jwtSecret,
-		AllowedOrigin:     os.Getenv("ALLOWED_ORIGIN"),
-		InitAdminEmail:    os.Getenv("INIT_ADMIN_EMAIL"),
-		InitAdminPassword: os.Getenv("INIT_ADMIN_PASSWORD"),
+		Port:                getEnv("PORT", "8080"),
+		DatabaseURL:         dbURL,
+		AdminSecret:         os.Getenv("ADMIN_SECRET"),
+		JWTSecret:           jwtSecret,
+		AllowedOrigin:       os.Getenv("ALLOWED_ORIGIN"),
+		InitAdminEmail:      os.Getenv("INIT_ADMIN_EMAIL"),
+		InitAdminPassword:   os.Getenv("INIT_ADMIN_PASSWORD"),
+		StripeSecretKey:     os.Getenv("STRIPE_SECRET_KEY"),
+		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
+		AppURL:              getEnv("APP_URL", "http://localhost:3000"),
 	}
 }
 

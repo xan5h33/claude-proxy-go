@@ -36,13 +36,19 @@ func main() {
 	userService     := application.NewUserService(userRepo)
 	authService     := application.NewAuthService(userRepo, cfg.JWTSecret)
 
+	var paymentService *application.PaymentService
+	stripeEnabled := cfg.StripeSecretKey != ""
+	if stripeEnabled {
+		paymentService = application.NewPaymentService(userService, cfg.StripeSecretKey, cfg.StripeWebhookSecret, cfg.AppURL)
+	}
+
 	// Bootstrap first admin if env vars are set and no admin exists yet
 	if cfg.InitAdminEmail != "" && cfg.InitAdminPassword != "" {
 		bootstrapAdmin(ctx, authService, userService, cfg.InitAdminEmail, cfg.InitAdminPassword)
 	}
 
-	handler := web.NewHandler(proxyService, providerService, userService, authService)
-	router  := web.NewRouter(handler, userService, authService, cfg.AdminSecret, cfg.AllowedOrigin)
+	handler := web.NewHandler(proxyService, providerService, userService, authService, paymentService)
+	router  := web.NewRouter(handler, userService, authService, cfg.AdminSecret, cfg.AllowedOrigin, stripeEnabled)
 
 	log.Printf("listening on :%s", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {
