@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -459,6 +460,7 @@ func (h *Handler) UpdateMyProviderSettings(c *gin.Context) {
 // ── Payment ───────────────────────────────────────────────────────────────────
 
 func (h *Handler) CreateCheckoutSession(c *gin.Context) {
+	log.Printf("[checkout] handler reached, payment nil=%v", h.payment == nil)
 	if h.payment == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "payments not configured"})
 		return
