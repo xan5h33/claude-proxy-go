@@ -13,9 +13,12 @@ type Config struct {
 	AllowedOrigin       string // e.g. https://your-app.vercel.app — empty = allow all
 	InitAdminEmail      string
 	InitAdminPassword   string
-	StripeSecretKey     string
-	StripeWebhookSecret string
-	AppURL              string // e.g. https://your-app.vercel.app
+	PolarAPIKey             string
+	PolarWebhookSecret      string
+	PolarProductStarter     string
+	PolarProductRegular     string
+	PolarProductHeavy       string
+	AppURL                  string // e.g. https://your-app.vercel.app
 }
 
 func Load() *Config {
@@ -36,9 +39,12 @@ func Load() *Config {
 		AllowedOrigin:       os.Getenv("ALLOWED_ORIGIN"),
 		InitAdminEmail:      os.Getenv("INIT_ADMIN_EMAIL"),
 		InitAdminPassword:   os.Getenv("INIT_ADMIN_PASSWORD"),
-		StripeSecretKey:     os.Getenv("STRIPE_SECRET_KEY"),
-		StripeWebhookSecret: os.Getenv("STRIPE_WEBHOOK_SECRET"),
-		AppURL:              getEnv("APP_URL", "http://localhost:3000"),
+		PolarAPIKey:             os.Getenv("POLAR_API_KEY"),
+		PolarWebhookSecret:      os.Getenv("POLAR_WEBHOOK_SECRET"),
+		PolarProductStarter:     os.Getenv("POLAR_PRODUCT_STARTER"),
+		PolarProductRegular:     os.Getenv("POLAR_PRODUCT_REGULAR"),
+		PolarProductHeavy:       os.Getenv("POLAR_PRODUCT_HEAVY"),
+		AppURL:                  getEnv("APP_URL", "http://localhost:3000"),
 	}
 }
 

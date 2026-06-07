@@ -479,14 +479,23 @@ func (h *Handler) CreateCheckoutSession(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"url": url})
 }
 
-func (h *Handler) StripeWebhook(c *gin.Context) {
+func (h *Handler) PolarWebhook(c *gin.Context) {
+	if h.payment == nil {
+		c.Status(http.StatusOK)
+		return
+	}
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read body"})
 		return
 	}
-	sig := c.GetHeader("Stripe-Signature")
-	if err := h.payment.HandleWebhook(c.Request.Context(), body, sig); err != nil {
+	err = h.payment.HandleWebhook(
+		c.Request.Context(), body,
+		c.GetHeader("webhook-id"),
+		c.GetHeader("webhook-timestamp"),
+		c.GetHeader("webhook-signature"),
+	)
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

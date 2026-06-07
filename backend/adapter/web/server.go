@@ -27,8 +27,8 @@ func NewRouter(h *Handler, users *application.UserService, auth *application.Aut
 	r.GET("/api/hello", h.OAuthHello)
 	r.GET("/v1/oauth/hello", h.OAuthHello)
 
-	// Stripe webhook — no auth, raw body needed
-	r.POST("/webhooks/stripe", h.StripeWebhook)
+	// Polar webhook — no auth, raw body needed
+	r.POST("/webhooks/polar", h.PolarWebhook)
 
 	// Public auth
 	r.POST("/auth/register", h.Register)

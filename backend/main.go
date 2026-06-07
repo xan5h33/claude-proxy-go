@@ -37,8 +37,18 @@ func main() {
 	authService     := application.NewAuthService(userRepo, cfg.JWTSecret)
 
 	var paymentService *application.PaymentService
-	if cfg.StripeSecretKey != "" {
-		paymentService = application.NewPaymentService(userService, cfg.StripeSecretKey, cfg.StripeWebhookSecret, cfg.AppURL)
+	if cfg.PolarAPIKey != "" {
+		paymentService = application.NewPaymentService(
+			userService,
+			cfg.PolarAPIKey,
+			cfg.PolarWebhookSecret,
+			cfg.AppURL,
+			map[string]string{
+				"starter": cfg.PolarProductStarter,
+				"regular": cfg.PolarProductRegular,
+				"heavy":   cfg.PolarProductHeavy,
+			},
+		)
 	}
 
 	// Bootstrap first admin if env vars are set and no admin exists yet

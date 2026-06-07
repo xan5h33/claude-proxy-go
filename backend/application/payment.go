@@ -1,36 +1,45 @@
 package application
 
 import (
+	"bytes"
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-
-	"github.com/stripe/stripe-go/v76"
-	"github.com/stripe/stripe-go/v76/checkout/session"
-	"github.com/stripe/stripe-go/v76/webhook"
+	"io"
+	"net/http"
+	"strings"
 )
 
 type Tier struct {
-	AmountCents int64
-	Tokens      int64
-	Label       string
+	Tokens int64
+	Label  string
 }
 
 var Tiers = map[string]Tier{
-	"starter": {AmountCents: 200, Tokens: 200_000, Label: "Starter"},
-	"regular": {AmountCents: 800, Tokens: 1_000_000, Label: "Regular"},
-	"heavy":   {AmountCents: 1500, Tokens: 2_000_000, Label: "Heavy"},
+	"starter": {Tokens: 200_000, Label: "Starter"},
+	"regular": {Tokens: 1_000_000, Label: "Regular"},
+	"heavy":   {Tokens: 2_000_000, Label: "Heavy"},
 }
 
 type PaymentService struct {
 	users         *UserService
+	apiKey        string
 	webhookSecret string
 	appURL        string
+	productIDs    map[string]string // tier key → Polar product ID
 }
 
-func NewPaymentService(users *UserService, stripeSecretKey, webhookSecret, appURL string) *PaymentService {
-	stripe.Key = stripeSecretKey
-	return &PaymentService{users: users, webhookSecret: webhookSecret, appURL: appURL}
+func NewPaymentService(users *UserService, apiKey, webhookSecret, appURL string, productIDs map[string]string) *PaymentService {
+	return &PaymentService{
+		users:         users,
+		apiKey:        apiKey,
+		webhookSecret: webhookSecret,
+		appURL:        appURL,
+		productIDs:    productIDs,
+	}
 }
 
 func (s *PaymentService) CreateCheckoutSession(ctx context.Context, userID, tierKey string) (string, error) {
@@ -38,55 +47,79 @@ func (s *PaymentService) CreateCheckoutSession(ctx context.Context, userID, tier
 	if !ok {
 		return "", fmt.Errorf("unknown tier: %s", tierKey)
 	}
+	productID, ok := s.productIDs[tierKey]
+	if !ok || productID == "" {
+		return "", fmt.Errorf("product not configured for tier: %s", tierKey)
+	}
 
-	params := &stripe.CheckoutSessionParams{
-		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
-		LineItems: []*stripe.CheckoutSessionLineItemParams{
-			{
-				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
-					Currency: stripe.String("usd"),
-					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name: stripe.String(fmt.Sprintf("ladle — %s (%s tokens)", tier.Label, formatTokens(tier.Tokens))),
-					},
-					UnitAmount: stripe.Int64(tier.AmountCents),
-				},
-				Quantity: stripe.Int64(1),
-			},
-		},
-		Metadata: map[string]string{
+	payload, _ := json.Marshal(map[string]any{
+		"product_id":  productID,
+		"success_url": s.appURL + "/topup/success",
+		"customer_metadata": map[string]string{
 			"user_id": userID,
 			"tokens":  fmt.Sprintf("%d", tier.Tokens),
 		},
-		SuccessURL: stripe.String(s.appURL + "/topup/success?session_id={CHECKOUT_SESSION_ID}"),
-		CancelURL:  stripe.String(s.appURL + "/topup"),
-	}
+	})
 
-	sess, err := session.New(params)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.polar.sh/v1/checkouts/custom", bytes.NewReader(payload))
 	if err != nil {
 		return "", err
 	}
-	return sess.URL, nil
+	req.Header.Set("Authorization", "Bearer "+s.apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 300 {
+		return "", fmt.Errorf("polar API error %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		URL string `json:"url"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return "", err
+	}
+	if result.URL == "" {
+		return "", fmt.Errorf("polar returned empty checkout URL")
+	}
+	return result.URL, nil
 }
 
-func (s *PaymentService) HandleWebhook(ctx context.Context, payload []byte, sig string) error {
-	event, err := webhook.ConstructEvent(payload, sig, s.webhookSecret)
-	if err != nil {
-		return fmt.Errorf("webhook signature: %w", err)
-	}
-
-	if event.Type != "checkout.session.completed" {
-		return nil
-	}
-
-	var sess stripe.CheckoutSession
-	if err := json.Unmarshal(event.Data.Raw, &sess); err != nil {
+func (s *PaymentService) HandleWebhook(ctx context.Context, payload []byte, webhookID, webhookTimestamp, webhookSig string) error {
+	if err := s.verifySignature(payload, webhookID, webhookTimestamp, webhookSig); err != nil {
 		return err
 	}
 
-	userID := sess.Metadata["user_id"]
-	tokensStr := sess.Metadata["tokens"]
+	var event struct {
+		Type string          `json:"type"`
+		Data json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(payload, &event); err != nil {
+		return err
+	}
+
+	// order.created fires when a one-time payment succeeds
+	if event.Type != "order.created" {
+		return nil
+	}
+
+	var order struct {
+		CustomerMetadata map[string]string `json:"customer_metadata"`
+	}
+	if err := json.Unmarshal(event.Data, &order); err != nil {
+		return err
+	}
+
+	userID := order.CustomerMetadata["user_id"]
+	tokensStr := order.CustomerMetadata["tokens"]
 	if userID == "" || tokensStr == "" {
-		return fmt.Errorf("missing metadata in checkout session")
+		return fmt.Errorf("missing metadata in order")
 	}
 
 	var tokens int64
@@ -97,12 +130,30 @@ func (s *PaymentService) HandleWebhook(ctx context.Context, payload []byte, sig 
 	return s.users.TopUp(ctx, userID, tokens)
 }
 
-func formatTokens(n int64) string {
-	if n >= 1_000_000 {
-		return fmt.Sprintf("%dM", n/1_000_000)
+// verifySignature implements the Standardwebhooks verification spec.
+func (s *PaymentService) verifySignature(payload []byte, msgID, msgTimestamp, msgSig string) error {
+	if msgID == "" || msgTimestamp == "" || msgSig == "" {
+		return fmt.Errorf("missing webhook signature headers")
 	}
-	if n >= 1_000 {
-		return fmt.Sprintf("%dK", n/1_000)
+
+	secret := s.webhookSecret
+	if after, ok := strings.CutPrefix(secret, "whsec_"); ok {
+		secret = after
 	}
-	return fmt.Sprintf("%d", n)
+	secretBytes, err := base64.StdEncoding.DecodeString(secret)
+	if err != nil {
+		return fmt.Errorf("invalid webhook secret encoding")
+	}
+
+	toSign := fmt.Sprintf("%s.%s.%s", msgID, msgTimestamp, string(payload))
+	mac := hmac.New(sha256.New, secretBytes)
+	mac.Write([]byte(toSign))
+	expected := "v1," + base64.StdEncoding.EncodeToString(mac.Sum(nil))
+
+	for _, sig := range strings.Fields(msgSig) {
+		if hmac.Equal([]byte(sig), []byte(expected)) {
+			return nil
+		}
+	}
+	return fmt.Errorf("webhook signature mismatch")
 }
