@@ -459,6 +459,10 @@ func (h *Handler) UpdateMyProviderSettings(c *gin.Context) {
 // ── Payment ───────────────────────────────────────────────────────────────────
 
 func (h *Handler) CreateCheckoutSession(c *gin.Context) {
+	if h.payment == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "payments not configured"})
+		return
+	}
 	user := c.MustGet("user").(*application.User)
 	var req struct {
 		Tier string `json:"tier" binding:"required"`

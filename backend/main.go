@@ -37,8 +37,7 @@ func main() {
 	authService     := application.NewAuthService(userRepo, cfg.JWTSecret)
 
 	var paymentService *application.PaymentService
-	stripeEnabled := cfg.StripeSecretKey != ""
-	if stripeEnabled {
+	if cfg.StripeSecretKey != "" {
 		paymentService = application.NewPaymentService(userService, cfg.StripeSecretKey, cfg.StripeWebhookSecret, cfg.AppURL)
 	}
 
@@ -48,7 +47,7 @@ func main() {
 	}
 
 	handler := web.NewHandler(proxyService, providerService, userService, authService, paymentService)
-	router  := web.NewRouter(handler, userService, authService, cfg.AdminSecret, cfg.AllowedOrigin, stripeEnabled)
+	router  := web.NewRouter(handler, userService, authService, cfg.AdminSecret, cfg.AllowedOrigin)
 
 	log.Printf("listening on :%s", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {
