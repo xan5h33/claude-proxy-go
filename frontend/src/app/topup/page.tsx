@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth"
 import { dashboard } from "@/lib/api"
 import { AppShell } from "@/components/app-shell"
@@ -72,13 +71,9 @@ export default function TopUpPage() {
                 className={`flex items-center justify-between px-6 py-5 gap-6 ${tier.highlight ? "bg-card" : ""}`}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-3 mb-1">
-                    <span className={`text-2xl font-bold ${tier.highlight ? "text-primary" : ""}`}>
-                      {tier.price}
-                    </span>
-                    <span className="text-sm text-muted-foreground">{tier.tokens}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{tier.label}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{tier.label}</p>
+                  <p className={`text-2xl font-bold mb-0.5 ${tier.highlight ? "text-primary" : ""}`}>{tier.price}</p>
+                  <p className="text-sm text-muted-foreground mb-2">{tier.tokens}</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">{tier.desc}</p>
                 </div>
                 <button
@@ -97,7 +92,7 @@ export default function TopUpPage() {
           </div>
 
           <p className="text-xs text-muted-foreground mt-6">
-            Payments are processed securely by Stripe. Tokens are credited instantly after payment.
+            Payments are processed securely by Polar. Tokens are credited instantly after payment.
           </p>
         </div>
       )}
