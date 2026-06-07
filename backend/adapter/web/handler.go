@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 
@@ -460,7 +459,6 @@ func (h *Handler) UpdateMyProviderSettings(c *gin.Context) {
 // ── Payment ───────────────────────────────────────────────────────────────────
 
 func (h *Handler) CreateCheckoutSession(c *gin.Context) {
-	log.Printf("[checkout] handler reached, payment nil=%v", h.payment == nil)
 	if h.payment == nil {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "payments not configured"})
 		return
@@ -491,13 +489,13 @@ func (h *Handler) PolarWebhook(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read body"})
 		return
 	}
-	wid := c.GetHeader("webhook-id")
-	wts := c.GetHeader("webhook-timestamp")
-	wsig := c.GetHeader("webhook-signature")
-	log.Printf("[webhook] id=%q ts=%q sig=%q bodyLen=%d", wid, wts, wsig, len(body))
-	err = h.payment.HandleWebhook(c.Request.Context(), body, wid, wts, wsig)
+	err = h.payment.HandleWebhook(
+		c.Request.Context(), body,
+		c.GetHeader("webhook-id"),
+		c.GetHeader("webhook-timestamp"),
+		c.GetHeader("webhook-signature"),
+	)
 	if err != nil {
-		log.Printf("[webhook] error: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
