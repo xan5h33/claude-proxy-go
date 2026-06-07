@@ -106,20 +106,40 @@ func (s *PaymentService) HandleWebhook(ctx context.Context, payload []byte, webh
 
 	// order.created fires when a one-time payment succeeds
 	if event.Type != "order.created" {
-		return nil
+		return fmt.Errorf("unhandled event type: %s", event.Type)
 	}
+
+	// Log raw data to diagnose field names
+	fmt.Printf("[webhook] raw data: %s\n", string(event.Data))
 
 	var order struct {
 		CustomerMetadata map[string]string `json:"customer_metadata"`
+		Metadata         map[string]string `json:"metadata"`
+		Checkout         *struct {
+			CustomerMetadata map[string]string `json:"customer_metadata"`
+			Metadata         map[string]string `json:"metadata"`
+		} `json:"checkout"`
 	}
 	if err := json.Unmarshal(event.Data, &order); err != nil {
 		return err
 	}
 
-	userID := order.CustomerMetadata["user_id"]
-	tokensStr := order.CustomerMetadata["tokens"]
+	// Try all possible locations for metadata
+	meta := order.CustomerMetadata
+	if len(meta) == 0 {
+		meta = order.Metadata
+	}
+	if len(meta) == 0 && order.Checkout != nil {
+		meta = order.Checkout.CustomerMetadata
+	}
+	if len(meta) == 0 && order.Checkout != nil {
+		meta = order.Checkout.Metadata
+	}
+
+	userID := meta["user_id"]
+	tokensStr := meta["tokens"]
 	if userID == "" || tokensStr == "" {
-		return fmt.Errorf("missing metadata in order")
+		return fmt.Errorf("missing metadata in order (got keys: %v)", meta)
 	}
 
 	var tokens int64
