@@ -140,9 +140,12 @@ func (s *PaymentService) verifySignature(payload []byte, msgID, msgTimestamp, ms
 	if after, ok := strings.CutPrefix(secret, "whsec_"); ok {
 		secret = after
 	}
-	secretBytes, err := base64.StdEncoding.DecodeString(secret)
-	if err != nil {
-		return fmt.Errorf("invalid webhook secret encoding")
+	// Try base64 decode first; fall back to raw bytes
+	var secretBytes []byte
+	if decoded, err := base64.StdEncoding.DecodeString(secret); err == nil {
+		secretBytes = decoded
+	} else {
+		secretBytes = []byte(secret)
 	}
 
 	toSign := fmt.Sprintf("%s.%s.%s", msgID, msgTimestamp, string(payload))
