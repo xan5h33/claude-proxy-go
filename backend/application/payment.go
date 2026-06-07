@@ -61,7 +61,7 @@ func (s *PaymentService) CreateCheckoutSession(ctx context.Context, userID, tier
 		},
 	})
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.polar.sh/v1/checkouts/custom", bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.polar.sh/v1/checkouts", bytes.NewReader(payload))
 	if err != nil {
 		return "", err
 	}
