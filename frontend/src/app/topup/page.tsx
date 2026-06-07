@@ -33,7 +33,6 @@ const tiers = [
 
 export default function TopUpPage() {
   const { user, isLoading } = useAuth()
-  const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState("")
 
@@ -57,12 +56,10 @@ export default function TopUpPage() {
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
             <p className="text-sm text-muted-foreground uppercase tracking-widest mb-2">top up</p>
-            <p className="text-muted-foreground text-sm">One-time purchase. No subscription, no expiry.</p>
+            <p className="text-sm text-muted-foreground">One-time purchase. No subscription, no expiry.</p>
           </div>
 
-          {error && (
-            <p className="text-sm text-destructive mb-6">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive mb-6">{error}</p>}
 
           <div className="border border-border divide-y divide-border">
             {tiers.map((tier) => (
@@ -70,10 +67,10 @@ export default function TopUpPage() {
                 key={tier.key}
                 className={`flex items-center justify-between px-6 py-5 gap-6 ${tier.highlight ? "bg-card" : ""}`}
               >
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-muted-foreground uppercase tracking-widest mb-2">{tier.label}</p>
-                  <p className={`text-2xl font-bold mb-0.5 ${tier.highlight ? "text-primary" : ""}`}>{tier.price}</p>
-                  <p className="text-sm text-muted-foreground mb-2">{tier.tokens}</p>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest">{tier.label}</p>
+                  <p className={`text-2xl font-bold ${tier.highlight ? "text-primary" : ""}`}>{tier.price}</p>
+                  <p className="text-sm text-muted-foreground">{tier.tokens}</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">{tier.desc}</p>
                 </div>
                 <button
