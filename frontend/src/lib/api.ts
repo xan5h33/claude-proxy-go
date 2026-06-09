@@ -58,6 +58,16 @@ export interface User {
   created_at: string
 }
 
+export interface PayoutRequest {
+  id: string
+  provider_id: string
+  amount: number
+  status: string // pending, approved, rejected
+  note: string
+  created_at: string
+  updated_at: string
+}
+
 export interface UsageLog {
   id: string
   user_id: string
@@ -181,4 +191,19 @@ export const dashboard = {
   updateProviderSettings: (id: string, settings: ProviderSettings) =>
     request<void>(`/user/me/providers/${id}/settings`, { method: "PATCH", body: JSON.stringify(settings) }),
   getUsage: () => request<UsageLog[]>("/user/me/usage"),
+  requestPayout: (providerId: string) =>
+    request<PayoutRequest>(`/user/me/providers/${providerId}/payout`, { method: "POST" }),
+  listProviderPayouts: (providerId: string) =>
+    request<PayoutRequest[]>(`/user/me/providers/${providerId}/payouts`),
+}
+
+export const adminApi = {
+  payouts: {
+    list: () => request<PayoutRequest[]>("/admin/payouts"),
+    update: (id: string, status: string, note?: string) =>
+      request<PayoutRequest>(`/admin/payouts/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status, note: note ?? "" }),
+      }),
+  },
 }

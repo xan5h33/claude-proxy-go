@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth"
-import { dashboard, Provider, ProviderSettings } from "@/lib/api"
+import { dashboard, Provider, ProviderSettings, PayoutRequest } from "@/lib/api"
 import { AppShell } from "@/components/app-shell"
 import { Spinner } from "@/components/spinner"
 import { Button } from "@/components/ui/button"
@@ -45,37 +45,7 @@ export default function MyProvidersPage() {
       {isLoading || !user
         ? <Spinner className="min-h-64" />
         : <div className="max-w-3xl mx-auto">
-        <div className="mb-6 p-4 bg-muted/40 rounded-lg space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Register a new machine as a provider by running the script below.
-          </p>
-          <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-md">
-            <span className="text-amber-600 dark:text-amber-400 text-sm font-medium shrink-0">Before you run:</span>
-            <p className="text-sm text-amber-700 dark:text-amber-300">
-              Make sure you&apos;re logged into Claude Code on that machine first — run <code className="font-mono bg-amber-100 dark:bg-amber-900 px-1 rounded">claude login</code> if you haven&apos;t already.
-            </p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">macOS / Linux</p>
-            <div className="font-mono text-sm bg-background border rounded px-3 py-2 break-all select-all">
-              ./register.sh {user.api_key}
-            </div>
-          </div>
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">Windows (PowerShell)</p>
-            <div className="font-mono text-sm bg-background border rounded px-3 py-2 break-all select-all">
-              .\register.ps1 {user.api_key}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <a href="/register.sh" download="register.sh">
-              <Button size="sm" variant="outline">Download .sh</Button>
-            </a>
-            <a href="/register.ps1" download="register.ps1">
-              <Button size="sm" variant="outline">Download .ps1</Button>
-            </a>
-          </div>
-        </div>
+        <RegisterInstructions apiKey={user.api_key} />
 
         {loading ? (
           <Spinner className="py-6" />
@@ -93,10 +63,90 @@ export default function MyProvidersPage() {
   )
 }
 
+function RegisterInstructions({ apiKey }: { apiKey: string }) {
+  const [copiedSh, setCopiedSh] = useState(false)
+  const [copiedPs, setCopiedPs] = useState(false)
+  const shCmd = `./register.sh ${apiKey}`
+  const psCmd = `.\\register.ps1 ${apiKey}`
+
+  const copy = (text: string, setCopied: (v: boolean) => void) => {
+    navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <div className="mb-6 p-4 bg-muted/40 rounded-lg space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Register a new machine as a provider by running the script below.
+      </p>
+      <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950 rounded-md">
+        <span className="text-amber-600 dark:text-amber-400 text-sm font-medium shrink-0">Before you run:</span>
+        <p className="text-sm text-amber-700 dark:text-amber-300">
+          Make sure you&apos;re logged into Claude Code on that machine first — run <code className="font-mono bg-amber-100 dark:bg-amber-900 px-1 rounded">claude login</code> if you haven&apos;t already.
+        </p>
+      </div>
+      <div className="space-y-1">
+        <p className="text-sm text-muted-foreground">macOS / Linux</p>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 font-mono text-sm bg-background border rounded px-3 py-2 break-all">{shCmd}</code>
+          <Button size="sm" variant="outline" className="shrink-0" onClick={() => copy(shCmd, setCopiedSh)}>
+            {copiedSh ? "Copied!" : "Copy"}
+          </Button>
+        </div>
+      </div>
+      <div className="space-y-1">
+        <p className="text-sm text-muted-foreground">Windows (PowerShell)</p>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 font-mono text-sm bg-background border rounded px-3 py-2 break-all">{psCmd}</code>
+          <Button size="sm" variant="outline" className="shrink-0" onClick={() => copy(psCmd, setCopiedPs)}>
+            {copiedPs ? "Copied!" : "Copy"}
+          </Button>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <a href="/register.sh" download="register.sh">
+          <Button size="sm" variant="outline">Download .sh</Button>
+        </a>
+        <a href="/register.ps1" download="register.ps1">
+          <Button size="sm" variant="outline">Download .ps1</Button>
+        </a>
+      </div>
+    </div>
+  )
+}
+
 function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: () => void }) {
   const [token, setToken] = useState("")
   const [savingToken, setSavingToken] = useState(false)
   const [toggling, setToggling] = useState(false)
+
+  const [payouts, setPayouts] = useState<PayoutRequest[]>([])
+  const [payoutLoading, setPayoutLoading] = useState(false)
+  const [payoutMsg, setPayoutMsg] = useState("")
+
+  useEffect(() => {
+    dashboard.listProviderPayouts(provider.id)
+      .then(setPayouts)
+      .catch(() => {})
+  }, [provider.id])
+
+  const hasPending = payouts.some(p => p.status === "pending")
+  const canPayout = (provider.earnings ?? 0) >= 10 && !hasPending
+
+  const handleRequestPayout = async () => {
+    setPayoutLoading(true)
+    setPayoutMsg("")
+    try {
+      const pr = await dashboard.requestPayout(provider.id)
+      setPayouts(prev => [pr, ...prev])
+      setPayoutMsg("Payout requested — we'll process it within a few days.")
+    } catch (e: unknown) {
+      setPayoutMsg(e instanceof Error ? e.message : "Failed")
+    } finally {
+      setPayoutLoading(false)
+    }
+  }
 
   const [cap, setCap] = useState(provider.cap === 0 ? "" : String(provider.cap))
   const [startHour, setStartHour] = useState(provider.window_start_hour !== null ? String(provider.window_start_hour) : "")
@@ -190,6 +240,7 @@ function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: ()
             <p className="text-sm text-muted-foreground">Earnings</p>
           </div>
         </div>
+        <p className="text-xs text-muted-foreground">Rate: $5.00 per million tokens served</p>
 
         {/* Availability window */}
         <div className="space-y-3">
@@ -224,6 +275,41 @@ function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: ()
             </Button>
             {settingsMsg && <span className="text-xs text-green-600">{settingsMsg}</span>}
           </div>
+        </div>
+
+        {/* Payout */}
+        <div className="space-y-3 pt-2 border-t">
+          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Payout</p>
+          <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              onClick={handleRequestPayout}
+              disabled={!canPayout || payoutLoading}
+            >
+              {payoutLoading ? "Requesting..." : "Request Payout"}
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              {hasPending ? "Pending request in progress" : `$10.00 minimum · current: $${(provider.earnings ?? 0).toFixed(4)}`}
+            </span>
+          </div>
+          {payoutMsg && (
+            <p className={`text-xs ${payoutMsg.startsWith("Payout requested") ? "text-green-600" : "text-destructive"}`}>
+              {payoutMsg}
+            </p>
+          )}
+          {payouts.length > 0 && (
+            <div className="border border-border divide-y divide-border text-sm">
+              {payouts.slice(0, 3).map(p => (
+                <div key={p.id} className="flex items-center justify-between px-3 py-2">
+                  <span className="text-muted-foreground">{new Date(p.created_at).toLocaleDateString()}</span>
+                  <span className="font-mono">${p.amount.toFixed(4)}</span>
+                  <Badge variant={p.status === "approved" ? "default" : p.status === "rejected" ? "destructive" : "secondary"}>
+                    {p.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Refresh token + pause/resume */}

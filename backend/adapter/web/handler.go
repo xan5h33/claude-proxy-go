@@ -16,15 +16,16 @@ import (
 )
 
 type Handler struct {
-	proxy    *application.ProxyService
+	proxy     *application.ProxyService
 	providers *application.ProviderService
-	users    *application.UserService
-	auth     *application.AuthService
-	payment  *application.PaymentService
+	users     *application.UserService
+	auth      *application.AuthService
+	payment   *application.PaymentService
+	payouts   *application.PayoutService
 }
 
-func NewHandler(proxy *application.ProxyService, providers *application.ProviderService, users *application.UserService, auth *application.AuthService, payment *application.PaymentService) *Handler {
-	return &Handler{proxy: proxy, providers: providers, users: users, auth: auth, payment: payment}
+func NewHandler(proxy *application.ProxyService, providers *application.ProviderService, users *application.UserService, auth *application.AuthService, payment *application.PaymentService, payouts *application.PayoutService) *Handler {
+	return &Handler{proxy: proxy, providers: providers, users: users, auth: auth, payment: payment, payouts: payouts}
 }
 
 // ── Health ────────────────────────────────────────────────────────────────────
@@ -500,6 +501,84 @@ func (h *Handler) PolarWebhook(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusOK)
+}
+
+// ── Payout handlers ───────────────────────────────────────────────────────────
+
+func (h *Handler) RequestPayout(c *gin.Context) {
+	user := c.MustGet("user").(*application.User)
+	p, err := h.providers.Get(c.Request.Context(), c.Param("id"))
+	if err != nil || p == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	if p.UserID != user.ID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+	pr, err := h.payouts.Request(c.Request.Context(), p.ID, p.Earnings)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusCreated, pr)
+}
+
+func (h *Handler) ListMyProviderPayouts(c *gin.Context) {
+	user := c.MustGet("user").(*application.User)
+	p, err := h.providers.Get(c.Request.Context(), c.Param("id"))
+	if err != nil || p == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+		return
+	}
+	if p.UserID != user.ID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+	payouts, err := h.payouts.ListByProvider(c.Request.Context(), p.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, payouts)
+}
+
+func (h *Handler) ListAllPayouts(c *gin.Context) {
+	payouts, err := h.payouts.ListAll(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, payouts)
+}
+
+func (h *Handler) UpdatePayoutStatus(c *gin.Context) {
+	var req struct {
+		Status string `json:"status" binding:"required"`
+		Note   string `json:"note"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	var (
+		pr  *application.PayoutRequest
+		err error
+	)
+	switch req.Status {
+	case "approved":
+		pr, err = h.payouts.Approve(c.Request.Context(), c.Param("id"), req.Note)
+	case "rejected":
+		pr, err = h.payouts.Reject(c.Request.Context(), c.Param("id"), req.Note)
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"error": "status must be approved or rejected"})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, pr)
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

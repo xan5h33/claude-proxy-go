@@ -35,6 +35,7 @@ func main() {
 	providerService := application.NewProviderService(provRepo)
 	userService     := application.NewUserService(userRepo)
 	authService     := application.NewAuthService(userRepo, cfg.JWTSecret)
+	payoutService   := application.NewPayoutService(pg)
 
 	var paymentService *application.PaymentService
 	if cfg.PolarAPIKey != "" {
@@ -56,7 +57,7 @@ func main() {
 		bootstrapAdmin(ctx, authService, userService, cfg.InitAdminEmail, cfg.InitAdminPassword)
 	}
 
-	handler := web.NewHandler(proxyService, providerService, userService, authService, paymentService)
+	handler := web.NewHandler(proxyService, providerService, userService, authService, paymentService, payoutService)
 	router  := web.NewRouter(handler, userService, authService, cfg.AdminSecret, cfg.AllowedOrigin)
 
 	log.Printf("listening on :%s", cfg.Port)

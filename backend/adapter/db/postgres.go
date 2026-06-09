@@ -395,12 +395,100 @@ func (db *Postgres) RunMigrations(ctx context.Context) error {
 
 		ALTER TABLE usage_log
 			DROP COLUMN IF EXISTS cost;
+
+		CREATE TABLE IF NOT EXISTS payout_requests (
+			id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
+			amount      NUMERIC(12,6) NOT NULL,
+			status      TEXT NOT NULL DEFAULT 'pending',
+			note        TEXT,
+			created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+		);
 	`)
 	return err
 }
 
+// ── PayoutRepository ──────────────────────────────────────────────────────────
+
+func (db *Postgres) CreatePayout(ctx context.Context, providerID string, amount float64) (*application.PayoutRequest, error) {
+	p := &application.PayoutRequest{}
+	err := db.pool.QueryRow(ctx, `
+		INSERT INTO payout_requests (provider_id, amount)
+		VALUES ($1, $2)
+		RETURNING id, provider_id, amount, status, COALESCE(note,''), created_at, updated_at`,
+		providerID, amount,
+	).Scan(&p.ID, &p.ProviderID, &p.Amount, &p.Status, &p.Note, &p.CreatedAt, &p.UpdatedAt)
+	return p, err
+}
+
+func (db *Postgres) FindPayoutsByProvider(ctx context.Context, providerID string) ([]*application.PayoutRequest, error) {
+	rows, err := db.pool.Query(ctx, `
+		SELECT id, provider_id, amount, status, COALESCE(note,''), created_at, updated_at
+		FROM payout_requests WHERE provider_id=$1 ORDER BY created_at DESC`, providerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]*application.PayoutRequest, 0)
+	for rows.Next() {
+		p := &application.PayoutRequest{}
+		if err := rows.Scan(&p.ID, &p.ProviderID, &p.Amount, &p.Status, &p.Note, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+func (db *Postgres) FindAllPayouts(ctx context.Context) ([]*application.PayoutRequest, error) {
+	rows, err := db.pool.Query(ctx, `
+		SELECT id, provider_id, amount, status, COALESCE(note,''), created_at, updated_at
+		FROM payout_requests ORDER BY created_at DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := make([]*application.PayoutRequest, 0)
+	for rows.Next() {
+		p := &application.PayoutRequest{}
+		if err := rows.Scan(&p.ID, &p.ProviderID, &p.Amount, &p.Status, &p.Note, &p.CreatedAt, &p.UpdatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, p)
+	}
+	return out, rows.Err()
+}
+
+func (db *Postgres) UpdatePayoutStatus(ctx context.Context, id, status, note string) (*application.PayoutRequest, error) {
+	p := &application.PayoutRequest{}
+	err := db.pool.QueryRow(ctx, `
+		UPDATE payout_requests SET status=$1, note=$2, updated_at=NOW()
+		WHERE id=$3
+		RETURNING id, provider_id, amount, status, COALESCE(note,''), created_at, updated_at`,
+		status, note, id,
+	).Scan(&p.ID, &p.ProviderID, &p.Amount, &p.Status, &p.Note, &p.CreatedAt, &p.UpdatedAt)
+	return p, err
+}
+
+func (db *Postgres) DeductProviderEarnings(ctx context.Context, providerID string, amount float64) error {
+	_, err := db.pool.Exec(ctx,
+		`UPDATE providers SET earnings=GREATEST(0, earnings-$1), updated_at=NOW() WHERE id=$2`,
+		amount, providerID)
+	return err
+}
+
+func (db *Postgres) HasPendingPayout(ctx context.Context, providerID string) (bool, error) {
+	var count int
+	err := db.pool.QueryRow(ctx,
+		`SELECT COUNT(*) FROM payout_requests WHERE provider_id=$1 AND status='pending'`, providerID,
+	).Scan(&count)
+	return count > 0, err
+}
+
 // Compile-time interface checks
 var _ application.ProviderRepository = (*Postgres)(nil)
+var _ application.PayoutRepository = (*Postgres)(nil)
 
 // adapter shims to satisfy separate interfaces via the same struct
 type userRepo struct{ *Postgres }

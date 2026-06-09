@@ -54,6 +54,8 @@ func NewRouter(h *Handler, users *application.UserService, auth *application.Aut
 		me.PATCH("/me/providers/:id/tokens", h.UpdateMyProviderTokens)
 		me.PATCH("/me/providers/:id/active", h.SetMyProviderActive)
 		me.PATCH("/me/providers/:id/settings", h.UpdateMyProviderSettings)
+		me.POST("/me/providers/:id/payout", h.RequestPayout)
+		me.GET("/me/providers/:id/payouts", h.ListMyProviderPayouts)
 		me.POST("/me/checkout", h.CreateCheckoutSession)
 	}
 
@@ -76,6 +78,9 @@ func NewRouter(h *Handler, users *application.UserService, auth *application.Aut
 		admin.POST("/users/:id/topup", h.TopUpUser)
 		admin.POST("/users/:id/rotate-key", h.RotateUserKey)
 		admin.DELETE("/users/:id", h.DeleteUser)
+
+		admin.GET("/payouts", h.ListAllPayouts)
+		admin.PATCH("/payouts/:id", h.UpdatePayoutStatus)
 	}
 
 	r.NoRoute(h.ProxyPassthrough)

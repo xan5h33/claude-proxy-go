@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useAuth } from "@/contexts/auth"
 import { dashboard } from "@/lib/api"
 import { AppShell } from "@/components/app-shell"
@@ -29,17 +30,21 @@ export default function DashboardPage() {
   )
 }
 
+const LOW_BALANCE_THRESHOLD = 20_000
+
 function UsageCard({ user }: { user: { balance?: number; total_input_tokens: number; total_output_tokens: number } }) {
   const total = user.total_input_tokens + user.total_output_tokens
-  const empty = (user.balance ?? 0) <= 0
+  const balance = user.balance ?? 0
+  const empty = balance <= 0
+  const low = !empty && balance < LOW_BALANCE_THRESHOLD
 
   return (
     <div className="p-6 space-y-4">
       <p className="text-sm text-muted-foreground uppercase tracking-widest">balance & usage</p>
       <div className="grid grid-cols-2 gap-0 border border-border divide-x divide-border">
         <div className="px-6 py-5 text-center">
-          <p className={`text-2xl font-bold ${empty ? "text-destructive" : "text-primary"}`}>
-            {(user.balance ?? 0).toLocaleString()}
+          <p className={`text-2xl font-bold ${empty ? "text-destructive" : low ? "text-amber-500" : "text-primary"}`}>
+            {balance.toLocaleString()}
           </p>
           <p className="text-sm text-muted-foreground mt-1">tokens remaining</p>
         </div>
@@ -52,6 +57,22 @@ function UsageCard({ user }: { user: { balance?: number; total_input_tokens: num
         <div>{user.total_input_tokens.toLocaleString()} input</div>
         <div>{user.total_output_tokens.toLocaleString()} output</div>
       </div>
+      {empty && (
+        <div className="flex items-center justify-between px-4 py-3 bg-destructive/10 border border-destructive/20">
+          <p className="text-sm text-destructive">Balance empty — requests are blocked.</p>
+          <Link href="/topup" className="text-sm font-bold text-destructive hover:opacity-80 shrink-0 ml-4">
+            Top up →
+          </Link>
+        </div>
+      )}
+      {low && (
+        <div className="flex items-center justify-between px-4 py-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800">
+          <p className="text-sm text-amber-700 dark:text-amber-300">Running low on tokens.</p>
+          <Link href="/topup" className="text-sm font-bold text-amber-700 dark:text-amber-300 hover:opacity-80 shrink-0 ml-4">
+            Top up →
+          </Link>
+        </div>
+      )}
     </div>
   )
 }

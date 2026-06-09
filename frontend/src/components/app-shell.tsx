@@ -13,7 +13,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, History, Server, Users, Cpu, LogOut, CreditCard } from "lucide-react"
+import { LayoutDashboard, History, Server, Users, Cpu, LogOut, CreditCard, Banknote } from "lucide-react"
 
 const userNav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -25,6 +25,7 @@ const userNav = [
 const adminNav = [
   { href: "/users", label: "Users", icon: Users },
   { href: "/providers", label: "Providers", icon: Cpu },
+  { href: "/payouts", label: "Payouts", icon: Banknote },
 ]
 
 export function AppShell({ children }: { children: React.ReactNode }) {
