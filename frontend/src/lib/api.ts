@@ -35,6 +35,7 @@ export interface Provider {
   rate_limited_until: string | null
   total_input_tokens: number
   total_output_tokens: number
+  earnings: number
   created_at: string
   updated_at: string
 }

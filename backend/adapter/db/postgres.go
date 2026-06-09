@@ -26,8 +26,8 @@ func NewPostgres(ctx context.Context, dsn string) (*Postgres, error) {
 
 // ── ProviderRepository ────────────────────────────────────────────────────────
 
-const providerCols = `id, COALESCE(user_id::text,''), name, account_uuid, cap, is_active, window_start_hour, window_end_hour, window_timezone, rate_limited_until, total_input_tokens, total_output_tokens, created_at, updated_at`
-const providerFullCols = `id, COALESCE(user_id::text,''), name, refresh_token, access_token, account_uuid, device_id, billing, cap, is_active, window_start_hour, window_end_hour, window_timezone, rate_limited_until, total_input_tokens, total_output_tokens, created_at, updated_at`
+const providerCols = `id, COALESCE(user_id::text,''), name, account_uuid, cap, is_active, window_start_hour, window_end_hour, window_timezone, rate_limited_until, total_input_tokens, total_output_tokens, earnings, created_at, updated_at`
+const providerFullCols = `id, COALESCE(user_id::text,''), name, refresh_token, access_token, account_uuid, device_id, billing, cap, is_active, window_start_hour, window_end_hour, window_timezone, rate_limited_until, total_input_tokens, total_output_tokens, earnings, created_at, updated_at`
 
 func scanProvider(row interface {
 	Scan(...any) error
@@ -35,11 +35,11 @@ func scanProvider(row interface {
 	if full {
 		return row.Scan(&p.ID, &p.UserID, &p.Name, &p.RefreshToken, &p.AccessToken, &p.AccountUUID, &p.DeviceID, &p.Billing,
 			&p.Cap, &p.IsActive, &p.WindowStartHour, &p.WindowEndHour, &p.WindowTimezone, &p.RateLimitedUntil,
-			&p.TotalInputTokens, &p.TotalOutputTokens, &p.CreatedAt, &p.UpdatedAt)
+			&p.TotalInputTokens, &p.TotalOutputTokens, &p.Earnings, &p.CreatedAt, &p.UpdatedAt)
 	}
 	return row.Scan(&p.ID, &p.UserID, &p.Name, &p.AccountUUID,
 		&p.Cap, &p.IsActive, &p.WindowStartHour, &p.WindowEndHour, &p.WindowTimezone, &p.RateLimitedUntil,
-		&p.TotalInputTokens, &p.TotalOutputTokens, &p.CreatedAt, &p.UpdatedAt)
+		&p.TotalInputTokens, &p.TotalOutputTokens, &p.Earnings, &p.CreatedAt, &p.UpdatedAt)
 }
 
 func (db *Postgres) Create(ctx context.Context, p *application.Provider) error {
@@ -273,6 +273,9 @@ func (db *Postgres) Log(ctx context.Context, u *application.UsageLog) error {
 	).Scan(&u.ID, &u.CreatedAt)
 }
 
+// earningsPerToken is $5 per million tokens credited to providers.
+const earningsPerToken = 5.0 / 1_000_000
+
 func (db *Postgres) AddTokens(ctx context.Context, userID, providerID string, input, output int) error {
 	total := int64(input + output)
 	_, err := db.pool.Exec(ctx, `
@@ -285,9 +288,15 @@ func (db *Postgres) AddTokens(ctx context.Context, userID, providerID string, in
 	if err != nil {
 		return err
 	}
+	earned := float64(total) * earningsPerToken
 	_, err = db.pool.Exec(ctx, `
-		UPDATE providers SET total_input_tokens=total_input_tokens+$1, total_output_tokens=total_output_tokens+$2, updated_at=NOW() WHERE id=$3`,
-		input, output, providerID)
+		UPDATE providers
+		SET total_input_tokens=total_input_tokens+$1,
+		    total_output_tokens=total_output_tokens+$2,
+		    earnings=earnings+$3,
+		    updated_at=NOW()
+		WHERE id=$4`,
+		input, output, earned, providerID)
 	return err
 }
 
@@ -380,6 +389,9 @@ func (db *Postgres) RunMigrations(ctx context.Context) error {
 
 		ALTER TABLE providers
 			ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL;
+
+		ALTER TABLE providers
+			ADD COLUMN IF NOT EXISTS earnings NUMERIC(12,6) NOT NULL DEFAULT 0;
 
 		ALTER TABLE usage_log
 			DROP COLUMN IF EXISTS cost;

@@ -22,6 +22,7 @@ type Provider struct {
 	RateLimitedUntil   *time.Time `json:"rate_limited_until"`
 	TotalInputTokens   int64      `json:"total_input_tokens"`
 	TotalOutputTokens  int64      `json:"total_output_tokens"`
+	Earnings           float64    `json:"earnings"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 }

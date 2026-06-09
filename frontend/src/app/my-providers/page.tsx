@@ -172,7 +172,7 @@ function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: ()
       </CardHeader>
       <CardContent className="space-y-5">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 text-center">
+        <div className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
           <div className="p-2 bg-muted/40 rounded-lg">
             <p className="text-xl font-bold">{provider.total_input_tokens.toLocaleString()}</p>
             <p className="text-sm text-muted-foreground">Input served</p>
@@ -184,6 +184,10 @@ function ProviderCard({ provider, onUpdate }: { provider: Provider; onUpdate: ()
           <div className="p-2 bg-muted/40 rounded-lg">
             <p className="text-xl font-bold">{total.toLocaleString()}</p>
             <p className="text-sm text-muted-foreground">Total served</p>
+          </div>
+          <div className="p-2 bg-muted/40 rounded-lg">
+            <p className="text-xl font-bold text-primary">${(provider.earnings ?? 0).toFixed(4)}</p>
+            <p className="text-sm text-muted-foreground">Earnings</p>
           </div>
         </div>
 
