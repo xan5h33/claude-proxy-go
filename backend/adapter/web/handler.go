@@ -16,16 +16,17 @@ import (
 )
 
 type Handler struct {
-	proxy     *application.ProxyService
-	providers *application.ProviderService
-	users     *application.UserService
-	auth      *application.AuthService
-	payment   *application.PaymentService
-	payouts   *application.PayoutService
+	proxy       *application.ProxyService
+	providers   *application.ProviderService
+	users       *application.UserService
+	auth        *application.AuthService
+	payment     *application.PaymentService
+	payouts     *application.PayoutService
+	proxySecret string
 }
 
-func NewHandler(proxy *application.ProxyService, providers *application.ProviderService, users *application.UserService, auth *application.AuthService, payment *application.PaymentService, payouts *application.PayoutService) *Handler {
-	return &Handler{proxy: proxy, providers: providers, users: users, auth: auth, payment: payment, payouts: payouts}
+func NewHandler(proxy *application.ProxyService, providers *application.ProviderService, users *application.UserService, auth *application.AuthService, payment *application.PaymentService, payouts *application.PayoutService, proxySecret string) *Handler {
+	return &Handler{proxy: proxy, providers: providers, users: users, auth: auth, payment: payment, payouts: payouts, proxySecret: proxySecret}
 }
 
 // ── Health ────────────────────────────────────────────────────────────────────
@@ -77,6 +78,27 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"token": tok, "user": user})
+}
+
+func (h *Handler) ClerkSync(c *gin.Context) {
+	if h.proxySecret == "" || c.GetHeader("x-proxy-secret") != h.proxySecret {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	var req struct {
+		ClerkID string `json:"clerk_id" binding:"required"`
+		Email   string `json:"email"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	user, err := h.auth.ClerkSync(c.Request.Context(), req.ClerkID, req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"user": user})
 }
 
 // ── OAuth preflight ───────────────────────────────────────────────────────────

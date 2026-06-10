@@ -1,87 +1,34 @@
-"use client"
-
-import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { auth } from "@/lib/api"
-import { useAuth } from "@/contexts/auth"
+import { SignIn } from "@clerk/nextjs"
 import { Wordmark } from "@/components/wordmark"
 
+const appearance = {
+  variables: {
+    fontFamily: "var(--font-space-mono), monospace",
+    colorPrimary: "#fafafa",
+    colorBackground: "#0a0a0a",
+    colorText: "#fafafa",
+    colorTextSecondary: "#a1a1aa",
+    colorInputBackground: "#141414",
+    colorInputText: "#fafafa",
+    colorNeutral: "#a1a1aa",
+    borderRadius: "0px",
+  },
+  elements: {
+    card: "shadow-none border border-[#1f1f1f]",
+    formButtonPrimary: "bg-[#fafafa] text-[#0a0a0a] hover:opacity-90",
+    footerActionLink: "text-[#fafafa] hover:opacity-80",
+  },
+}
+
 export default function LoginPage() {
-  const router = useRouter()
-  const { setAuth } = useAuth()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
-    try {
-      const res = await auth.login(email, password)
-      setAuth(res.token, res.user)
-      router.push("/dashboard")
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Login failed")
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <main className="min-h-screen bg-background flex flex-col">
       <nav className="flex items-center justify-between px-6 py-4 border-b border-border">
         <Link href="/"><Wordmark className="text-lg" /></Link>
       </nav>
-
-      <div className="flex-1 flex items-start justify-center pt-20 p-6">
-        <div className="w-full max-w-sm">
-          <p className="text-xs text-primary tracking-widest uppercase mb-6">sign in</p>
-          <h1 className="text-2xl font-bold mb-8">Welcome back.</h1>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">email</label>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoFocus
-                className="w-full bg-card border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">password</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full bg-card border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary transition-colors"
-              />
-            </div>
-            {error && <p className="text-xs text-destructive">{error}</p>}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-primary text-primary-foreground text-sm font-semibold py-2.5 hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {loading ? "signing in..." : "sign in →"}
-            </button>
-          </form>
-
-          <p className="text-xs text-muted-foreground mt-6">
-            no account?{" "}
-            <Link href="/register" className="text-primary hover:opacity-80 transition-opacity">
-              create one
-            </Link>
-          </p>
-        </div>
+      <div className="flex-1 flex items-start justify-center pt-16 p-6">
+        <SignIn appearance={appearance} forceRedirectUrl="/dashboard" />
       </div>
     </main>
   )

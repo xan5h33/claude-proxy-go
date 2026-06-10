@@ -238,6 +238,19 @@ func (db *Postgres) FindUserByID(ctx context.Context, id string) (*application.U
 	return u, nil
 }
 
+func (db *Postgres) FindByClerkID(ctx context.Context, clerkID string) (*application.User, error) {
+	u := &application.User{}
+	if err := scanUser(db.pool.QueryRow(ctx, `SELECT `+userCols+` FROM users WHERE clerk_id=$1`, clerkID), u); err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func (db *Postgres) SetClerkID(ctx context.Context, id, clerkID string) error {
+	_, err := db.pool.Exec(ctx, `UPDATE users SET clerk_id=$1 WHERE id=$2`, clerkID, id)
+	return err
+}
+
 func (db *Postgres) TopUpUserBalance(ctx context.Context, id string, amount int64) error {
 	_, err := db.pool.Exec(ctx, `UPDATE users SET balance=balance+$1 WHERE id=$2`, amount, id)
 	return err
@@ -396,6 +409,9 @@ func (db *Postgres) RunMigrations(ctx context.Context) error {
 		ALTER TABLE usage_log
 			DROP COLUMN IF EXISTS cost;
 
+		ALTER TABLE users
+			ADD COLUMN IF NOT EXISTS clerk_id TEXT UNIQUE;
+
 		CREATE TABLE IF NOT EXISTS payout_requests (
 			id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			provider_id UUID NOT NULL REFERENCES providers(id) ON DELETE CASCADE,
@@ -525,6 +541,12 @@ func (r *userRepo) SetAdmin(ctx context.Context, id string, admin bool) error {
 	return r.SetUserAdmin(ctx, id, admin)
 }
 func (r *userRepo) Delete(ctx context.Context, id string) error { return r.DeleteUser(ctx, id) }
+func (r *userRepo) FindByClerkID(ctx context.Context, clerkID string) (*application.User, error) {
+	return r.Postgres.FindByClerkID(ctx, clerkID)
+}
+func (r *userRepo) SetClerkID(ctx context.Context, id, clerkID string) error {
+	return r.Postgres.SetClerkID(ctx, id, clerkID)
+}
 
 func (r *usageRepo) Log(ctx context.Context, u *application.UsageLog) error {
 	return r.Postgres.Log(ctx, u)

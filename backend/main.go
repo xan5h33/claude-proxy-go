@@ -57,7 +57,7 @@ func main() {
 		bootstrapAdmin(ctx, authService, userService, cfg.InitAdminEmail, cfg.InitAdminPassword)
 	}
 
-	handler := web.NewHandler(proxyService, providerService, userService, authService, paymentService, payoutService)
+	handler := web.NewHandler(proxyService, providerService, userService, authService, paymentService, payoutService, cfg.ProxySecret)
 	router  := web.NewRouter(handler, userService, authService, cfg.AdminSecret, cfg.AllowedOrigin)
 
 	log.Printf("listening on :%s", cfg.Port)

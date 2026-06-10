@@ -33,6 +33,7 @@ func NewRouter(h *Handler, users *application.UserService, auth *application.Aut
 	// Public auth
 	r.POST("/auth/register", h.Register)
 	r.POST("/auth/login", h.Login)
+	r.POST("/auth/clerk-sync", h.ClerkSync)
 
 	// Proxy — API key only
 	proxy := r.Group("/")

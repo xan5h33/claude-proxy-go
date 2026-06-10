@@ -1,8 +1,16 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react"
-import { getToken, setToken, clearToken, parseToken, isTokenValid } from "@/lib/auth"
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react"
+import { useUser, useClerk } from "@clerk/nextjs"
 import { User } from "@/lib/api"
+
+const API_KEY_STORAGE = "ladle_api_key"
+
+export const getApiKey = (): string | null =>
+  typeof window !== "undefined" ? localStorage.getItem(API_KEY_STORAGE) : null
+
+const storeApiKey = (k: string) => localStorage.setItem(API_KEY_STORAGE, k)
+const clearApiKey = () => localStorage.removeItem(API_KEY_STORAGE)
 
 interface AuthContextValue {
   user: User | null
@@ -23,48 +31,74 @@ const AuthContext = createContext<AuthContextValue>({
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { user: clerkUser, isLoaded: clerkLoaded } = useUser()
+  const { signOut } = useClerk()
   const [user, setUser] = useState<User | null>(null)
-  const [token, setTokenState] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [apiKey, setApiKeyState] = useState<string | null>(null)
+  const [synced, setSynced] = useState(false)
+  const syncingRef = useRef(false)
 
   useEffect(() => {
-    const stored = getToken()
-    if (stored && isTokenValid(stored)) {
-      const payload = parseToken(stored)
-      if (payload) {
-        setTokenState(stored)
-        // Fetch full user info
-        fetch("/api/user/me", {
-          headers: { Authorization: `Bearer ${stored}` },
-        })
-          .then((r) => r.ok ? r.json() : null)
-          .then((u) => { if (u) setUser(u) })
-          .catch(() => {})
-          .finally(() => setIsLoading(false))
-        return
-      }
-    }
-    clearToken()
-    setIsLoading(false)
-  }, [])
+    if (!clerkLoaded) return
 
-  const setAuth = (tok: string, u: User) => {
-    setToken(tok)
-    setTokenState(tok)
+    if (!clerkUser) {
+      clearApiKey()
+      setUser(null)
+      setApiKeyState(null)
+      setSynced(false)
+      syncingRef.current = false
+      return
+    }
+
+    if (synced || syncingRef.current) return
+    syncingRef.current = true
+
+    fetch("/api/auth/sync", { method: "POST" })
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        storeApiKey(data.user.api_key)
+        setApiKeyState(data.user.api_key)
+        setUser(data.user)
+      })
+      .catch(() => {
+        const existing = getApiKey()
+        if (existing) {
+          setApiKeyState(existing)
+          fetch("/api/user/me", { headers: { Authorization: `Bearer ${existing}` } })
+            .then(r => r.ok ? r.json() : null)
+            .then(u => { if (u) setUser(u) })
+            .catch(() => {})
+        }
+      })
+      .finally(() => {
+        setSynced(true)
+        syncingRef.current = false
+      })
+  }, [clerkLoaded, clerkUser, synced])
+
+  const setAuth = (token: string, u: User) => {
+    storeApiKey(token)
+    setApiKeyState(token)
     setUser(u)
   }
 
   const logout = () => {
-    clearToken()
-    setTokenState(null)
+    clearApiKey()
     setUser(null)
-    window.location.href = "/login"
+    setApiKeyState(null)
+    setSynced(false)
+    signOut({ redirectUrl: "/login" })
   }
 
-  const isAdmin = user?.is_admin ?? false
-
   return (
-    <AuthContext.Provider value={{ user, token, isAdmin, isLoading, setAuth, logout }}>
+    <AuthContext.Provider value={{
+      user,
+      token: apiKey,
+      isAdmin: user?.is_admin ?? false,
+      isLoading: !clerkLoaded || (!!clerkUser && !synced),
+      setAuth,
+      logout,
+    }}>
       {children}
     </AuthContext.Provider>
   )

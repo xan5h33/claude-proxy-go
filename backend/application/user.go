@@ -22,11 +22,13 @@ type UserRepository interface {
 	Create(ctx context.Context, u *User) error
 	FindByAPIKey(ctx context.Context, apiKey string) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
+	FindByClerkID(ctx context.Context, clerkID string) (*User, error)
 	FindAll(ctx context.Context) ([]*User, error)
 	FindByID(ctx context.Context, id string) (*User, error)
 	TopUp(ctx context.Context, id string, amount int64) error
 	DeductBalance(ctx context.Context, id string, amount int64) error
 	UpdateAPIKey(ctx context.Context, id, newKey string) error
+	SetClerkID(ctx context.Context, id, clerkID string) error
 	SetAdmin(ctx context.Context, id string, admin bool) error
 	Delete(ctx context.Context, id string) error
 }
@@ -76,6 +78,14 @@ func (s *UserService) RotateKey(ctx context.Context, id, newKey string) (*User, 
 		return nil, err
 	}
 	return s.repo.FindByID(ctx, id)
+}
+
+func (s *UserService) FindByClerkID(ctx context.Context, clerkID string) (*User, error) {
+	return s.repo.FindByClerkID(ctx, clerkID)
+}
+
+func (s *UserService) SetClerkID(ctx context.Context, id, clerkID string) error {
+	return s.repo.SetClerkID(ctx, id, clerkID)
 }
 
 func (s *UserService) SetAdmin(ctx context.Context, id string, admin bool) error {

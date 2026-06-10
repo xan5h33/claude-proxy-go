@@ -19,6 +19,7 @@ type Config struct {
 	PolarProductRegular     string
 	PolarProductHeavy       string
 	AppURL                  string // e.g. https://your-app.vercel.app
+	ProxySecret             string // shared secret between Next.js and Go backend
 }
 
 func Load() *Config {
@@ -45,6 +46,7 @@ func Load() *Config {
 		PolarProductRegular:     os.Getenv("POLAR_PRODUCT_REGULAR"),
 		PolarProductHeavy:       os.Getenv("POLAR_PRODUCT_HEAVY"),
 		AppURL:                  getEnv("APP_URL", "http://localhost:3000"),
+		ProxySecret:             os.Getenv("PROXY_SECRET"),
 	}
 }
 

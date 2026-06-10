@@ -23,7 +23,7 @@ export default function DashboardPage() {
         ? <Spinner className="min-h-64" />
         : <div className="max-w-2xl mx-auto border border-border divide-y divide-border">
             <UsageCard user={user} />
-            <APIKeyCard user={user} onRotate={(u) => setAuth(localStorage.getItem("token")!, u)} />
+            <APIKeyCard user={user} onRotate={(u) => setAuth(u.api_key, u)} />
           </div>
       }
     </AppShell>
