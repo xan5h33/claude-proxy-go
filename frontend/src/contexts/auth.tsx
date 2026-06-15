@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, useRef, ReactNode } from "react"
-import { useUser, useClerk } from "@clerk/nextjs"
+import { useSession, signOut as nextAuthSignOut } from "next-auth/react"
 import { User } from "@/lib/api"
 
 const API_KEY_STORAGE = "ladle_api_key"
@@ -31,17 +31,16 @@ const AuthContext = createContext<AuthContextValue>({
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { user: clerkUser, isLoaded: clerkLoaded } = useUser()
-  const { signOut } = useClerk()
+  const { status } = useSession()
   const [user, setUser] = useState<User | null>(null)
   const [apiKey, setApiKeyState] = useState<string | null>(null)
   const [synced, setSynced] = useState(false)
   const syncingRef = useRef(false)
 
   useEffect(() => {
-    if (!clerkLoaded) return
+    if (status === "loading") return
 
-    if (!clerkUser) {
+    if (status === "unauthenticated") {
       clearApiKey()
       setUser(null)
       setApiKeyState(null)
@@ -74,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSynced(true)
         syncingRef.current = false
       })
-  }, [clerkLoaded, clerkUser, synced])
+  }, [status, synced])
 
   const setAuth = (token: string, u: User) => {
     storeApiKey(token)
@@ -87,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
     setApiKeyState(null)
     setSynced(false)
-    signOut({ redirectUrl: "/login" })
+    nextAuthSignOut({ callbackUrl: "/login" })
   }
 
   return (
@@ -95,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       token: apiKey,
       isAdmin: user?.is_admin ?? false,
-      isLoading: !clerkLoaded || (!!clerkUser && !synced),
+      isLoading: status === "loading" || (status === "authenticated" && !synced),
       setAuth,
       logout,
     }}>

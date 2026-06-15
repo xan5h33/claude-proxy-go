@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -78,19 +79,14 @@ func (s *AuthService) ParseToken(tokenStr string) (*AuthClaims, error) {
 	return claims, nil
 }
 
-func (s *AuthService) ClerkSync(ctx context.Context, clerkID, email string) (*User, error) {
-	// Find by clerk_id first (returning user)
-	if u, err := s.users.FindByClerkID(ctx, clerkID); err == nil && u != nil {
+// OAuthSync finds or creates a user by email. Handles Clerk legacy clerk_id if provided.
+func (s *AuthService) OAuthSync(ctx context.Context, email string) (*User, error) {
+	if email == "" {
+		return nil, fmt.Errorf("email is required")
+	}
+	if u, err := s.users.FindByEmail(ctx, email); err == nil && u != nil {
 		return u, nil
 	}
-	// Link existing email/password account if email matches
-	if email != "" {
-		if u, err := s.users.FindByEmail(ctx, email); err == nil && u != nil {
-			_ = s.users.SetClerkID(ctx, u.ID, clerkID)
-			return u, nil
-		}
-	}
-	// Create new user
 	u := &User{
 		APIKey: "sk-proxy-" + uuid.New().String(),
 		Email:  email,
@@ -98,7 +94,6 @@ func (s *AuthService) ClerkSync(ctx context.Context, clerkID, email string) (*Us
 	if err := s.users.Create(ctx, u); err != nil {
 		return nil, err
 	}
-	_ = s.users.SetClerkID(ctx, u.ID, clerkID)
 	return u, nil
 }
 

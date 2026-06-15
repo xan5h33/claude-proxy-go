@@ -80,20 +80,19 @@ func (h *Handler) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": tok, "user": user})
 }
 
-func (h *Handler) ClerkSync(c *gin.Context) {
+func (h *Handler) OAuthSync(c *gin.Context) {
 	if h.proxySecret == "" || c.GetHeader("x-proxy-secret") != h.proxySecret {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 	var req struct {
-		ClerkID string `json:"clerk_id" binding:"required"`
-		Email   string `json:"email"`
+		Email string `json:"email" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user, err := h.auth.ClerkSync(c.Request.Context(), req.ClerkID, req.Email)
+	user, err := h.auth.OAuthSync(c.Request.Context(), req.Email)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -1,15 +1,15 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
+import { auth } from "@/auth"
+import { NextResponse } from "next/server"
 
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/login(.*)",
-  "/register(.*)",
-  "/api(.*)", // API routes handle their own auth
-])
+const PUBLIC = ["/", "/login", "/register"]
 
-export default clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) {
-    await auth.protect()
+export default auth((req) => {
+  const { pathname } = req.nextUrl
+  const isPublic = PUBLIC.some(p => pathname === p || pathname.startsWith(p + "/"))
+  const isApi = pathname.startsWith("/api")
+
+  if (!isPublic && !isApi && !req.auth) {
+    return NextResponse.redirect(new URL("/login", req.nextUrl))
   }
 })
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Mono } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
+import { SessionProvider } from "next-auth/react";
 import { AuthProvider } from "@/contexts/auth";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
@@ -39,9 +39,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`h-full antialiased ${spaceMono.variable}`}>
       <body className="min-h-full flex flex-col font-mono">
-        <ClerkProvider signInUrl="/login" signUpUrl="/register">
+        <SessionProvider>
           <AuthProvider><TooltipProvider>{children}</TooltipProvider></AuthProvider>
-        </ClerkProvider>
+        </SessionProvider>
       </body>
     </html>
   );

@@ -12,7 +12,7 @@ func NewRouter(h *Handler, users *application.UserService, auth *application.Aut
 
 	corsConfig := cors.Config{
 		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Content-Type", "x-api-key", "x-admin-secret", "Authorization"},
+		AllowHeaders:     []string{"Content-Type", "x-api-key", "x-admin-secret", "Authorization", "x-proxy-secret"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: false,
 	}
@@ -33,7 +33,7 @@ func NewRouter(h *Handler, users *application.UserService, auth *application.Aut
 	// Public auth
 	r.POST("/auth/register", h.Register)
 	r.POST("/auth/login", h.Login)
-	r.POST("/auth/clerk-sync", h.ClerkSync)
+	r.POST("/auth/sync", h.OAuthSync)
 
 	// Proxy — API key only
 	proxy := r.Group("/")
