@@ -15,10 +15,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm space-y-8">
           <div>
             <p className="text-xs text-primary tracking-widest uppercase mb-3">sign in</p>
-            <h1 className="text-2xl font-bold">Welcome back.</h1>
-            <p className="text-sm text-muted-foreground mt-2">
-              No account needed — signing in creates one automatically.
-            </p>
+            <h1 className="text-2xl font-bold">Welcome.</h1>
           </div>
 
           <div className="space-y-3">
